@@ -1,14 +1,17 @@
 {
     "compilerOptions": {
-        "target": "es2022",
-        "lib": ["dom", "es2015"],
-        "module": "commonjs",
-        "noEmitOnError": true,
-
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
-
+        "target": "ES6",
+        "module": "ESNext",
+        "moduleResolution": "node",
         "strict": true,
-        "skipLibCheck": true
-    }
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "lib": ["dom", "esnext"],
+        "noEmitOnError": true,
+        "isolatedModules": true,
+        "types": ["chrome"]
+    },
+    "exclude": ["node_modules", "dist"]
 }

@@ -1,3 +1,10 @@
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === "keyPress") {
+        console.error("Key press detected:", message.key);
+        console.error("Wow!!");
+    }
+});
+
 // ==================== Debugger Logistics ====================
 
 // A list of tabs that the debugger is attached to
