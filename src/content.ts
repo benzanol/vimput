@@ -1,10 +1,8 @@
-console.log("HI!!!!");
-document.addEventListener("keydown", (event) => {
-    // console.log("Keydown!!", event.key);
-    // Send key press data to the background script
-    console.error("Hi!");
-    chrome.runtime.sendMessage({
-        type: "keyPress",
-        key: event.key,
-    });
+function pressKeys(keys: Key[]) {
+    chrome.runtime.sendMessage(null, { type: "pressKeys", keys });
+}
+
+window.addEventListener("keypress", function (event) {
+    console.log("Key:", event.key);
+    pressKeys(["Control", "ArrowLeft"]);
 });

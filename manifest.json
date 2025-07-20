@@ -5,6 +5,7 @@
     "description": "Simulate ArrowLeft key event after clicking extension button",
     "permissions": ["debugger", "activeTab"],
     "background": {
+        "scripts": ["dist/content.js"],
         "service_worker": "dist/background.js"
     },
     "content_scripts": [

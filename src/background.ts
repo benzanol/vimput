@@ -1,17 +1,12 @@
-chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === "keyPress") {
-        console.error("Key press detected:", message.key);
-        console.error("Wow!!");
-    }
-});
-
 // ==================== Debugger Logistics ====================
 
 // A list of tabs that the debugger is attached to
 const attachedTabs = new Set<number>();
 
 // Attach the debugger in order to send key press events
-function attachDebugger(tabId: number): Promise<void> {
+async function ensureDebuggerAttached(tabId: number): Promise<void> {
+    if (attachedTabs.has(tabId)) return;
+
     return new Promise((resolve, reject) => {
         chrome.debugger.attach({ tabId }, "1.3", () => {
             if (chrome.runtime.lastError) {
@@ -23,13 +18,6 @@ function attachDebugger(tabId: number): Promise<void> {
         });
     });
 }
-
-// When the extension is activated
-chrome.action.onClicked.addListener(async (tab) => {
-    if (tab.id && !attachedTabs.has(tab.id)) {
-        await attachDebugger(tab.id);
-    }
-});
 
 // Detect when the debugger detaches
 chrome.debugger.onDetach.addListener(({ tabId }) => {
@@ -92,4 +80,11 @@ function sendKeyCombo(tabId: number, combo: KeyCombo, start: number = 0) {
     sendKeyEvent(tabId, "keyUp", combo[start]);
 }
 
-// ==================== Program Logic ====================
+// Send keys sent from content.ts
+chrome.runtime.onMessage.addListener((message, sender) => {
+    console.error(sender.tab?.id, message);
+    if (sender.tab?.id && message.type === "pressKeys") {
+        ensureDebuggerAttached(sender.tab.id);
+        sendKeyCombo(sender.tab.id, message.keys as KeyCombo);
+    }
+});
