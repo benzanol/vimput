@@ -35,21 +35,21 @@ async function pressKey(key: KeyCombo): Promise<void> {
 
 // Detect all key presses
 let lastKey: string | undefined = undefined;
-window.addEventListener("keydown", (e) => {
-    if (pressingKeys) {
-        // console.log("Auto pressed:", e.key);
-        return;
-    }
+window.addEventListener("keydown", async (event) => {
+    if (pressingKeys) return;
 
-    if (e.ctrlKey || e.altKey || (e.shiftKey && e.key.length > 1)) return;
-    console.log("Handling", mode, e.key);
+    let key = event.key;
+    if (event.shiftKey) key = "S-" + key;
+    if (event.ctrlKey) key = "C-" + key;
+    if (event.altKey) key = "A-" + key;
+    console.log("Handling", mode, key);
 
     try {
-        if (mode === "insert") handleInsert(e);
-        else if (mode === "normal") handleNormal(e);
-        else if (mode === "visual") handleVisual(e);
+        if (mode === "insert") await handleInsert(key, event);
+        else if (mode === "normal") await handleNormal(key, event);
+        else if (mode === "visual") await handleVisual(key, event);
     } finally {
-        lastKey = e.key;
+        lastKey = key;
     }
 });
 
@@ -71,10 +71,13 @@ async function handleBinding(binding: KeyBinding): Promise<void> {
 
 // ==================== Insert ====================
 
-async function handleInsert(e: KeyboardEvent): Promise<void> {
-    if (lastKey === "j" && e.key === "k") {
-        preventEvent(e);
+async function handleInsert(key: string, event: KeyboardEvent): Promise<void> {
+    if (lastKey === "j" && key === "k") {
+        preventEvent(event);
         await pressKey("Backspace");
+        changeMode("normal");
+    } else if (key === "C-q") {
+        preventEvent(event);
         changeMode("normal");
     }
 }
@@ -87,10 +90,10 @@ const normalModeBindings: Record<string, KeyBinding> = {
     j: { keys: ["ArrowDown"] },
     k: { keys: ["ArrowUp"] },
 
-    H: { keys: repeat(4, "ArrowLeft") },
-    L: { keys: repeat(4, "ArrowRight") },
-    J: { keys: repeat(4, "ArrowDown") },
-    K: { keys: repeat(4, "ArrowUp") },
+    "S-H": { keys: repeat(4, "ArrowLeft") },
+    "S-L": { keys: repeat(4, "ArrowRight") },
+    "S-J": { keys: repeat(4, "ArrowDown") },
+    "S-K": { keys: repeat(4, "ArrowUp") },
 
     b: { keys: ["C-ArrowLeft"] },
     e: { keys: ["C-ArrowRight"] },
@@ -103,17 +106,17 @@ const normalModeBindings: Record<string, KeyBinding> = {
     i: { mode: "insert" },
     a: { keys: ["ArrowRight"], mode: "insert" },
 
-    v: { keys: ["S-ArrowRight"], mode: "visual" },
+    v: { mode: "visual" },
     p: { keys: ["C-v"] },
     u: { keys: ["C-z"] },
     U: { keys: ["C-S-z"] },
 };
 
-async function handleNormal(e: KeyboardEvent): Promise<void> {
-    const binding = normalModeBindings[e.key];
+async function handleNormal(key: string, event: KeyboardEvent): Promise<void> {
+    const binding = normalModeBindings[key];
     if (binding) {
-        preventEvent(e);
-        handleBinding(binding);
+        preventEvent(event);
+        await handleBinding(binding);
     }
 }
 
@@ -125,10 +128,10 @@ const visualModeBindings: Record<string, KeyBinding> = {
     j: { keys: ["S-ArrowDown"] },
     k: { keys: ["S-ArrowUp"] },
 
-    H: { keys: repeat(4, "S-ArrowLeft") },
-    L: { keys: repeat(4, "S-ArrowRight") },
-    J: { keys: repeat(4, "S-ArrowDown") },
-    K: { keys: repeat(4, "S-ArrowUp") },
+    "S-H": { keys: repeat(4, "S-ArrowLeft") },
+    "S-L": { keys: repeat(4, "S-ArrowRight") },
+    "S-J": { keys: repeat(4, "S-ArrowDown") },
+    "S-K": { keys: repeat(4, "S-ArrowUp") },
 
     b: { keys: ["C-S-ArrowLeft"] },
     e: { keys: ["C-S-ArrowRight"] },
@@ -138,12 +141,14 @@ const visualModeBindings: Record<string, KeyBinding> = {
     s: { keys: ["C-x"], mode: "normal" },
     y: { keys: ["C-c"] },
     q: { keys: ["ArrowRight"], mode: "normal" },
+    i: { keys: ["ArrowLeft"], mode: "insert" },
+    a: { keys: ["ArrowRight"], mode: "insert" },
 };
 
-async function handleVisual(e: KeyboardEvent): Promise<void> {
-    const binding = visualModeBindings[e.key];
+async function handleVisual(key: string, event: KeyboardEvent): Promise<void> {
+    const binding = visualModeBindings[key];
     if (binding) {
-        preventEvent(e);
-        handleBinding(binding);
+        preventEvent(event);
+        await handleBinding(binding);
     }
 }
