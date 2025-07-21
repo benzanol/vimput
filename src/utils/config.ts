@@ -19,6 +19,10 @@ export const defaultVinputConfigText = `
 # Start in insert mode
 set DefaultMode insert
 
+set NormalCaretColor #119966
+set MotionCaretColor #ffe263
+set VisualCaretColor #ff00ff
+
 # Entering normal mode
 imap C-q Normal
 
