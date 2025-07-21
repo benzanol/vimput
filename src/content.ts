@@ -21,13 +21,21 @@ function repeat<T>(length: number, elem: T): T[] {
 
 // ==================== Key presses ====================
 
-// Send to the backend to perform key press actions
-let pressingKeys = false;
+// A simple way to do actions on key bindings
+type KeyBinding = {
+    keys?: KeyCombo[];
+    mode?: Mode;
+};
+
+// Send to the backend to perform key press actions. Store globally
+// that the key is being pressed so that the event listener can ignore
+// it.
+let pressingKey: KeyCombo | undefined = undefined;
 async function pressKey(key: KeyCombo): Promise<void> {
     return new Promise((resolve) => {
-        pressingKeys = true;
+        pressingKey = key;
         chrome.runtime.sendMessage(null, { type: "pressKey", key }, () => {
-            pressingKeys = false;
+            pressingKey = undefined;
             resolve();
         });
     });
@@ -36,119 +44,95 @@ async function pressKey(key: KeyCombo): Promise<void> {
 // Detect all key presses
 let lastKey: string | undefined = undefined;
 window.addEventListener("keydown", async (event) => {
-    if (pressingKeys) return;
-
     let key = event.key;
     if (event.shiftKey) key = "S-" + key;
     if (event.ctrlKey) key = "C-" + key;
     if (event.altKey) key = "A-" + key;
-    console.log("Handling", mode, key);
 
-    try {
-        if (mode === "insert") await handleInsert(key, event);
-        else if (mode === "normal") await handleNormal(key, event);
-        else if (mode === "visual") await handleVisual(key, event);
-    } finally {
-        lastKey = key;
+    if (pressingKey && pressingKey === key) {
+        // This is an event triggered by the extension simulating a
+        // key (well probably, it technically could be a coincidence)
+        console.log("Extension Pressed:", key);
+        return;
+    } else if (pressingKey) {
+        // The user pressed a key while the extension was in the
+        // process of performing a keybind. In this case, block the
+        // user's key press.
+        preventEvent(event);
+        console.log("Blocked Overlapping Event:", key);
+        return;
     }
+
+    const modeBindings = bindings[mode];
+    const keyBinding = modeBindings[key];
+    if (keyBinding) {
+        preventEvent(event);
+
+        // Press keys specified by the binding
+        for (const combo of keyBinding.keys ?? []) {
+            await pressKey(combo);
+        }
+
+        // Change mode if specified by the binding
+        if (keyBinding.mode) changeMode(keyBinding.mode);
+    }
+
+    lastKey = key;
 });
-
-// ==================== Binding system ====================
-
-// A simple way to do actions on key bindings
-type KeyBinding = {
-    keys?: KeyCombo[];
-    mode?: Mode;
-};
-
-async function handleBinding(binding: KeyBinding): Promise<void> {
-    for (const combo of binding.keys ?? []) {
-        await pressKey(combo);
-    }
-
-    if (binding.mode) changeMode(binding.mode);
-}
 
 // ==================== Insert ====================
 
-async function handleInsert(key: string, event: KeyboardEvent): Promise<void> {
-    if (lastKey === "j" && key === "k") {
-        preventEvent(event);
-        await pressKey("Backspace");
-        changeMode("normal");
-    } else if (key === "C-q") {
-        preventEvent(event);
-        changeMode("normal");
-    }
-}
+const bindings: Record<Mode, Record<string, KeyBinding>> = {
+    insert: {
+        "C-q": { keys: ["ArrowLeft"], mode: "normal" },
+    },
+    normal: {
+        h: { keys: ["ArrowLeft"] },
+        l: { keys: ["ArrowRight"] },
+        j: { keys: ["ArrowDown"] },
+        k: { keys: ["ArrowUp"] },
 
-// ==================== Normal ====================
+        "S-H": { keys: repeat(4, "ArrowLeft") },
+        "S-L": { keys: repeat(4, "ArrowRight") },
+        "S-J": { keys: repeat(4, "ArrowDown") },
+        "S-K": { keys: repeat(4, "ArrowUp") },
 
-const normalModeBindings: Record<string, KeyBinding> = {
-    h: { keys: ["ArrowLeft"] },
-    l: { keys: ["ArrowRight"] },
-    j: { keys: ["ArrowDown"] },
-    k: { keys: ["ArrowUp"] },
+        b: { keys: ["C-ArrowLeft"] },
+        e: { keys: ["C-ArrowRight"] },
 
-    "S-H": { keys: repeat(4, "ArrowLeft") },
-    "S-L": { keys: repeat(4, "ArrowRight") },
-    "S-J": { keys: repeat(4, "ArrowDown") },
-    "S-K": { keys: repeat(4, "ArrowUp") },
+        z: { keys: ["Backspace"] },
+        x: { keys: ["Delete"] },
+        Z: { keys: ["C-Backspace"] },
+        X: { keys: ["C-Delete"] },
 
-    b: { keys: ["C-ArrowLeft"] },
-    e: { keys: ["C-ArrowRight"] },
+        i: { mode: "insert" },
+        a: { keys: ["ArrowRight"], mode: "insert" },
 
-    z: { keys: ["Backspace"] },
-    x: { keys: ["Delete"] },
-    Z: { keys: ["C-Backspace"] },
-    X: { keys: ["C-Delete"] },
+        v: { mode: "visual" },
+        p: { keys: ["C-v"] },
+        u: { keys: ["C-z"] },
+        U: { keys: ["C-S-z"] },
+    },
+    visual: {
+        h: { keys: ["S-ArrowLeft"] },
+        l: { keys: ["S-ArrowRight"] },
+        j: { keys: ["S-ArrowDown"] },
+        k: { keys: ["S-ArrowUp"] },
 
-    i: { mode: "insert" },
-    a: { keys: ["ArrowRight"], mode: "insert" },
+        "S-H": { keys: repeat(4, "S-ArrowLeft") },
+        "S-L": { keys: repeat(4, "S-ArrowRight") },
+        "S-J": { keys: repeat(4, "S-ArrowDown") },
+        "S-K": { keys: repeat(4, "S-ArrowUp") },
 
-    v: { mode: "visual" },
-    p: { keys: ["C-v"] },
-    u: { keys: ["C-z"] },
-    U: { keys: ["C-S-z"] },
+        b: { keys: ["C-S-ArrowLeft"] },
+        e: { keys: ["C-S-ArrowRight"] },
+
+        d: { keys: ["Backspace"], mode: "normal" },
+        c: { keys: ["Backspace"], mode: "insert" },
+        s: { keys: ["C-x"], mode: "normal" },
+        y: { keys: ["C-c"] },
+        q: { keys: ["ArrowRight"], mode: "normal" },
+        i: { keys: ["ArrowLeft"], mode: "insert" },
+        a: { keys: ["ArrowRight"], mode: "insert" },
+    },
 };
-
-async function handleNormal(key: string, event: KeyboardEvent): Promise<void> {
-    const binding = normalModeBindings[key];
-    if (binding) {
-        preventEvent(event);
-        await handleBinding(binding);
-    }
-}
-
-// ==================== Visual ====================
-
-const visualModeBindings: Record<string, KeyBinding> = {
-    h: { keys: ["S-ArrowLeft"] },
-    l: { keys: ["S-ArrowRight"] },
-    j: { keys: ["S-ArrowDown"] },
-    k: { keys: ["S-ArrowUp"] },
-
-    "S-H": { keys: repeat(4, "S-ArrowLeft") },
-    "S-L": { keys: repeat(4, "S-ArrowRight") },
-    "S-J": { keys: repeat(4, "S-ArrowDown") },
-    "S-K": { keys: repeat(4, "S-ArrowUp") },
-
-    b: { keys: ["C-S-ArrowLeft"] },
-    e: { keys: ["C-S-ArrowRight"] },
-
-    d: { keys: ["Backspace"], mode: "normal" },
-    c: { keys: ["Backspace"], mode: "insert" },
-    s: { keys: ["C-x"], mode: "normal" },
-    y: { keys: ["C-c"] },
-    q: { keys: ["ArrowRight"], mode: "normal" },
-    i: { keys: ["ArrowLeft"], mode: "insert" },
-    a: { keys: ["ArrowRight"], mode: "insert" },
-};
-
-async function handleVisual(key: string, event: KeyboardEvent): Promise<void> {
-    const binding = visualModeBindings[key];
-    if (binding) {
-        preventEvent(event);
-        await handleBinding(binding);
-    }
-}
