@@ -215,11 +215,16 @@ type Mode =
     | { type: "insert" | "normal" | "visual"; repeat?: number }
     | { type: "motion"; repeat?: number; operator: VinputCommand[]; previous: Mode };
 
-let mode: Mode = { type: "insert" };
+// Initially change the mode in order to set the extension icon
+let mode: Mode = { type: "normal" };
+changeMode({ type: "insert" });
 
 function changeMode(newMode: Mode) {
+    if (newMode.type !== mode.type) {
+        chrome.runtime.sendMessage(null, { type: "changeMode", mode: newMode });
+    }
+
     mode = newMode;
-    console.log("Changed Mode:", mode.type, mode.repeat);
 }
 
 // ==================== Handling Key Presses ====================

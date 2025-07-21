@@ -104,12 +104,21 @@ async function performKeyPress(tabId: number, combo: KeyCombo): Promise<void> {
 
 // Send keys sent from content.ts
 chrome.runtime.onMessage.addListener(async (message, sender, respond) => {
-    if (sender.tab?.id && message.type === "pressKey") {
+    const tabId = sender.tab?.id;
+    if (!tabId) return;
+
+    if (message.type === "pressKey") {
         try {
-            ensureDebuggerAttached(sender.tab.id);
-            await performKeyPress(sender.tab.id, message.key as KeyCombo);
+            ensureDebuggerAttached(tabId);
+            await performKeyPress(tabId, message.key as KeyCombo);
         } finally {
             respond();
         }
+    } else if (message.type === "changeMode") {
+        const mode = message.mode.type;
+        chrome.action.setIcon({
+            tabId,
+            path: { "128": `/icons/${mode}.png` },
+        });
     }
 });
