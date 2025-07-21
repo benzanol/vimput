@@ -44,6 +44,14 @@ const vinputCommands = {
         description: "Move cursor to the next word",
         keys: ["C-ArrowRight"],
     },
+    LineStart: {
+        description: "Move cursor to the start of the line",
+        keys: ["Home"],
+    },
+    LineEnd: {
+        description: "Move cursor to the end of the line",
+        keys: ["End"],
+    },
 
     Backspace: {
         description: "Delete character before the cursor",
@@ -85,6 +93,14 @@ const vinputCommands = {
     VisualForwardWord: {
         description: "Expand selection to next word",
         keys: ["C-S-ArrowRight"],
+    },
+    VisualLineStart: {
+        description: "Expand selection to the start of the line",
+        keys: ["S-Home"],
+    },
+    VisualLineEnd: {
+        description: "Expand selection to the end of the line",
+        keys: ["S-End"],
     },
 
     Cut: {
@@ -160,6 +176,8 @@ const defaultVinputConfig: VinputConfig = {
         b: defCommand(["BackwardWord"]),
         w: defCommand(["ForwardWord"]),
         e: defCommand(["ForwardWord"]),
+        "S-^": defCommand(["LineStart"]),
+        "S-$": defCommand(["LineEnd"]),
 
         x: defCommand(["Delete"]),
         "S-X": defCommand(["DeleteWord"]),
@@ -185,6 +203,8 @@ const defaultVinputConfig: VinputConfig = {
         b: defCommand(["VisualBackwardWord"]),
         w: defCommand(["VisualForwardWord"]),
         e: defCommand(["VisualForwardWord"]),
+        "S-^": defCommand(["VisualLineStart"]),
+        "S-$": defCommand(["VisualLineEnd"]),
 
         i: defCommand(["Left", "Insert"]),
         a: defCommand(["Right", "Insert"]),
@@ -201,6 +221,12 @@ const defaultVinputConfig: VinputConfig = {
         b: defCommand(["VisualBackwardWord"]),
         w: defCommand(["VisualForwardWord"]),
         e: defCommand(["VisualForwardWord"]),
+        "S-^": defCommand(["VisualLineStart"]),
+        "S-$": defCommand(["VisualLineEnd"]),
+
+        d: defCommand(["LineStart", "VisualLineEnd"]),
+        c: defCommand(["LineStart", "VisualLineEnd"]),
+        y: defCommand(["LineStart", "VisualLineEnd"]),
 
         "S-W": defCommand(["BackwardWord", "VisualForwardWord"]),
     },

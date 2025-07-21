@@ -38,6 +38,8 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 // ==================== Sending Keys ====================
 
 const KEYS = {
+    End: 35,
+    Home: 36,
     ArrowLeft: 37,
     ArrowUp: 38,
     ArrowRight: 39,
