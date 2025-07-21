@@ -103,17 +103,14 @@ async function performKeyPress(tabId: number, combo: KeyCombo): Promise<void> {
 // ==================== Message Listener ====================
 
 // Send keys sent from content.ts
-chrome.runtime.onMessage.addListener(async (message, sender, respond) => {
+chrome.runtime.onMessage.addListener((message, sender, respond) => {
     const tabId = sender.tab?.id;
     if (!tabId) return;
 
     if (message.type === "pressKey") {
-        try {
-            ensureDebuggerAttached(tabId);
-            await performKeyPress(tabId, message.key as KeyCombo);
-        } finally {
-            respond();
-        }
+        ensureDebuggerAttached(tabId);
+        performKeyPress(tabId, message.key as KeyCombo).finally(() => respond());
+        return true;
     } else if (message.type === "changeMode") {
         const mode = message.mode.type;
         chrome.action.setIcon({
