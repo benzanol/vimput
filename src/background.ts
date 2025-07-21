@@ -49,9 +49,7 @@ const KEYS = {
     Delete: 46,
     Backspace: 8,
 
-    Control: 17,
-    Shift: 16,
-
+    // Copy, paste, cut, and undo are the only supported
     c: 67,
     v: 86,
     x: 88,
@@ -59,31 +57,19 @@ const KEYS = {
 } as const;
 
 type Key = keyof typeof KEYS;
-type KeyCombo = Key | `C-${Key}` | `S-${Key}` | `C-S-${Key}`;
+type SKeyCombo = Key | `S-${Key}`;
+type CSKeyCombo = SKeyCombo | `C-${SKeyCombo}`;
+type KeyCombo = CSKeyCombo | `A-${CSKeyCombo}`;
 
-const KEY_CODES: Partial<Record<Key, string>> = {
-    Control: "ControlLeft",
-    Shift: "ShiftLeft",
-};
-
-type EventType = "keyDown" | "keyUp";
-
-async function performKeyEvent(tabId: number, type: EventType, combo: KeyCombo): Promise<void> {
-    const [modifiers, key] = calculateModifiers(combo);
-    const code = KEY_CODES[key as Key] ?? key;
-    const windowsVirtualKeyCode = KEYS[key as Key];
-    const event = { type, code, key, windowsVirtualKeyCode, modifiers };
-
-    return new Promise((resolve) => {
-        chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", event, () => {
-            resolve();
-        });
-    });
-}
+type EventType = "keyDown" | "keyUp" | "rawKeyDown";
 
 // Parse a key combo to get the modifiers and the base key
 function calculateModifiers(key: KeyCombo): [number, Key] {
     let modifiers = 0;
+    if (key.startsWith("A-")) {
+        key = key.substring(2) as KeyCombo;
+        modifiers += 1;
+    }
     if (key.startsWith("C-")) {
         key = key.substring(2) as KeyCombo;
         modifiers += 2;
@@ -95,9 +81,22 @@ function calculateModifiers(key: KeyCombo): [number, Key] {
     return [modifiers, key as Key];
 }
 
+async function performKeyEvent(tabId: number, type: EventType, combo: KeyCombo): Promise<void> {
+    const [modifiers, key] = calculateModifiers(combo);
+    const code = key; // None of the keys used require a different key code
+    const windowsVirtualKeyCode = KEYS[key as Key];
+    const event = { type, code, key, windowsVirtualKeyCode, modifiers };
+
+    return new Promise((resolve) => {
+        chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", event, () => {
+            resolve();
+        });
+    });
+}
+
 // Send a key press down and up
 async function performKeyPress(tabId: number, combo: KeyCombo): Promise<void> {
-    await performKeyEvent(tabId, "keyDown", combo);
+    await performKeyEvent(tabId, "rawKeyDown", combo);
     await performKeyEvent(tabId, "keyUp", combo);
 }
 
