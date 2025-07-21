@@ -265,7 +265,7 @@ window.addEventListener("keydown", async (event) => {
         // selection change listener runs before it is set to false,
         // meaning that if a command makes the visual selection have
         // length 0, visual mode will not be immediately disabled
-        setTimeout(() => (handlingKeydown = false), 0);
+        setTimeout(() => (handlingKeydown = false), 1);
     }
 });
 
