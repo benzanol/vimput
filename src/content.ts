@@ -37,10 +37,11 @@ async function pressKey(key: KeyCombo): Promise<void> {
 let lastKey: string | undefined = undefined;
 window.addEventListener("keydown", (e) => {
     if (pressingKeys) {
-        console.log("Auto pressed:", e.key);
+        // console.log("Auto pressed:", e.key);
         return;
     }
 
+    if (e.ctrlKey || e.altKey || (e.shiftKey && e.key.length > 1)) return;
     console.log("Handling", mode, e.key);
 
     try {
@@ -104,6 +105,8 @@ const normalModeBindings: Record<string, KeyBinding> = {
 
     v: { keys: ["S-ArrowRight"], mode: "visual" },
     p: { keys: ["C-v"] },
+    u: { keys: ["C-z"] },
+    U: { keys: ["C-S-z"] },
 };
 
 async function handleNormal(e: KeyboardEvent): Promise<void> {
