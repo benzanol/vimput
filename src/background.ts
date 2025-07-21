@@ -42,49 +42,60 @@ const KEYS = {
     ArrowUp: 38,
     ArrowRight: 39,
     ArrowDown: 40,
+
     Enter: 13,
     Tab: 9,
     Space: 32,
     Delete: 46,
     Backspace: 8,
-    Control: 17,
-    Shift: 16,
+
+    c: 99,
+    v: 118,
+    x: 120,
+    z: 122,
 } as const;
 
 type Key = keyof typeof KEYS;
-type KeyCombo = Key[];
+type KeyCombo = Key | `C-${Key}` | `S-${Key}` | `C-S-${Key}`;
 
-const KEY_CODES: Partial<Record<Key, string>> = {
-    Control: "ControlLeft",
-    Shift: "ShiftLeft",
-};
+type EventType = "keyDown" | "keyUp";
 
-function sendKeyEvent(tabId: number, type: "keyDown" | "keyUp", key: Key) {
-    const windowsVirtualKeyCode = KEYS[key];
-    const code = KEY_CODES[key] ?? key;
-    const event = { type, windowsVirtualKeyCode, code, key };
-    chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", event);
+async function performKeyEvent(tabId: number, type: EventType, key: KeyCombo): Promise<void> {
+    let modifiers = 0;
+    if (key.startsWith("C-")) {
+        key = key.substring(2) as KeyCombo;
+        modifiers += 2;
+    }
+    if (key.startsWith("S-")) {
+        key = key.substring(2) as KeyCombo;
+        modifiers += 8;
+    }
+    console.error("KEY", key, modifiers);
+
+    const windowsVirtualKeyCode = KEYS[key as Key];
+    const event = { type, windowsVirtualKeyCode, code: key, key, modifiers };
+
+    return new Promise((resolve) => {
+        chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", event, () => {
+            resolve();
+        });
+    });
 }
 
 // Send a key press down and up
-function sendKeyPress(tabId: number, key: Key) {
-    sendKeyEvent(tabId, "keyDown", key);
-    sendKeyEvent(tabId, "keyUp", key);
-}
-
-// Send a combination of keys all pressed at once
-function sendKeyCombo(tabId: number, combo: KeyCombo, start: number = 0) {
-    if (start >= combo.length) return;
-    sendKeyEvent(tabId, "keyDown", combo[start]);
-    sendKeyCombo(tabId, combo, start + 1);
-    sendKeyEvent(tabId, "keyUp", combo[start]);
+async function performKeyPress(tabId: number, key: KeyCombo): Promise<void> {
+    await performKeyEvent(tabId, "keyDown", key);
+    await performKeyEvent(tabId, "keyUp", key);
 }
 
 // Send keys sent from content.ts
-chrome.runtime.onMessage.addListener((message, sender) => {
-    console.error(sender.tab?.id, message);
-    if (sender.tab?.id && message.type === "pressKeys") {
-        ensureDebuggerAttached(sender.tab.id);
-        sendKeyCombo(sender.tab.id, message.keys as KeyCombo);
+chrome.runtime.onMessage.addListener((message, sender, respond) => {
+    if (sender.tab?.id && message.type === "pressKey") {
+        try {
+            ensureDebuggerAttached(sender.tab.id);
+            performKeyPress(sender.tab.id, message.key as KeyCombo);
+        } finally {
+            respond();
+        }
     }
 });
