@@ -1,18 +1,6 @@
 // ==================== Commands ====================
 
-import vinputCommands from "./commands";
-
-type CommandType = keyof typeof vinputCommands;
-type CommandName = { [K in CommandType]: keyof typeof vinputCommands[K] }[CommandType];
-type CommandDef = {
-    description: string;
-    keys?: readonly KeyCombo[];
-    mode?: "insert" | "normal" | "visual";
-};
-
-const flattenedCommands = Object.fromEntries(
-    Object.values(vinputCommands).flatMap((type) => Object.entries(type)),
-) as Record<CommandName, CommandDef>;
+import { CommandName, flattenedCommands } from "./commands";
 
 async function performCommands(commands: CommandName[]): Promise<void> {
     for (const command of commands) {
@@ -26,7 +14,7 @@ async function performCommands(commands: CommandName[]): Promise<void> {
         }
 
         // Switch the mode associated with the command
-        if (commandDef.mode) changeMode({ type: commandDef.mode });
+        if (commandDef.mode) changeState({ mode: commandDef.mode });
     }
 }
 
@@ -35,116 +23,42 @@ async function performCommands(commands: CommandName[]): Promise<void> {
 // An action can either be a 'command', which executes normally, or an
 // 'operator', which first waits for a motion, and then executes.
 type VinputAction = { type: "command" | "operator"; commands: CommandName[] };
-const defCommand = (commands: CommandName[]): VinputAction => ({ type: "command", commands });
-const defOperator = (commands: CommandName[]): VinputAction => ({ type: "operator", commands });
 
 // A mapping from keybindings to lists of commands
 type VinputConfigKeymap = Record<string, VinputAction>;
-type VinputConfig = {
+export type VinputConfig = {
     insert: VinputConfigKeymap;
     normal: VinputConfigKeymap;
     visual: VinputConfigKeymap;
     motion: VinputConfigKeymap;
 };
 
-const defaultVinputConfig: VinputConfig = {
-    insert: {
-        "C-q": defCommand(["Normal"]),
-    },
-    normal: {
-        i: defCommand(["Insert"]),
-        a: defCommand(["Right", "Insert"]),
-        "S-I": defCommand(["BackwardWord", "Insert"]),
-        "S-A": defCommand(["ForwardWord", "Insert"]),
-        v: defCommand(["Visual"]),
-
-        h: defCommand(["Left"]),
-        j: defCommand(["Down"]),
-        k: defCommand(["Up"]),
-        l: defCommand(["Right"]),
-        b: defCommand(["BackwardWord"]),
-        w: defCommand(["ForwardWord"]),
-        e: defCommand(["ForwardWord"]),
-        "S-^": defCommand(["LineStart"]),
-        "S-$": defCommand(["LineEnd"]),
-
-        x: defCommand(["Delete"]),
-        "S-X": defCommand(["DeleteWord"]),
-        z: defCommand(["Backspace"]),
-        "S-Z": defCommand(["BackspaceWord"]),
-
-        u: defCommand(["Undo"]),
-        "S-U": defCommand(["Redo"]),
-
-        p: defCommand(["Paste"]),
-
-        d: defOperator(["Cut"]),
-        c: defOperator(["Cut", "Insert"]),
-        y: defOperator(["Copy", "Right"]),
-    },
-    visual: {
-        q: defCommand(["Normal", "Right"]),
-
-        h: defCommand(["VisualLeft"]),
-        j: defCommand(["VisualDown"]),
-        k: defCommand(["VisualUp"]),
-        l: defCommand(["VisualRight"]),
-        b: defCommand(["VisualBackwardWord"]),
-        w: defCommand(["VisualForwardWord"]),
-        e: defCommand(["VisualForwardWord"]),
-        "S-^": defCommand(["VisualLineStart"]),
-        "S-$": defCommand(["VisualLineEnd"]),
-
-        i: defCommand(["Left", "Insert"]),
-        a: defCommand(["Right", "Insert"]),
-
-        c: defCommand(["Cut", "Insert"]),
-        d: defCommand(["Cut", "Normal"]),
-        y: defCommand(["Copy"]),
-    },
-    motion: {
-        h: defCommand(["VisualLeft"]),
-        j: defCommand(["VisualDown"]),
-        k: defCommand(["VisualUp"]),
-        l: defCommand(["VisualRight"]),
-        b: defCommand(["VisualBackwardWord"]),
-        w: defCommand(["VisualForwardWord"]),
-        e: defCommand(["VisualForwardWord"]),
-        "S-^": defCommand(["VisualLineStart"]),
-        "S-$": defCommand(["VisualLineEnd"]),
-
-        d: defCommand(["LineStart", "VisualLineEnd"]),
-        c: defCommand(["LineStart", "VisualLineEnd"]),
-        y: defCommand(["LineStart", "VisualLineEnd"]),
-
-        "S-W": defCommand(["BackwardWord", "VisualForwardWord"]),
-    },
-};
+import defaultVinputConfig from "./config";
 
 // ==================== Mode ====================
 
 // For the motion mode, we need to know which operator to run once the
 // user provides a motion, and also which mode to return to after the
 // operator is performed.
-type Mode =
-    | { type: "insert" | "normal" | "visual"; repeat?: number }
+export type VinputState =
+    | { mode: "insert" | "normal" | "visual"; repeat?: number }
     | {
-          type: "motion";
+          mode: "motion";
           repeat?: number;
           operator: CommandName[];
           previous: "insert" | "normal" | "visual";
       };
 
 // Initially change the mode in order to set the extension icon
-let mode: Mode = { type: "normal" };
-changeMode({ type: "insert" });
+let state: VinputState = { mode: "normal" };
+changeState({ mode: "insert" });
 
-function changeMode(newMode: Mode) {
-    if (newMode.type !== mode.type) {
-        chrome.runtime.sendMessage(null, { type: "changeMode", mode: newMode });
+function changeState(newState: VinputState) {
+    if (newState.mode !== state.mode) {
+        chrome.runtime.sendMessage(null, { type: "changeMode", mode: newState });
     }
 
-    mode = newMode;
+    state = newState;
 }
 
 // ==================== Handling Key Presses ====================
@@ -205,24 +119,24 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
         return;
     }
 
-    const repeat = mode.repeat ?? 1;
+    const repeat = state.repeat ?? 1;
 
     // Check if it is a numeric argument
-    if (mode.type !== "insert" && key.match(/^[0123456789]$/)) {
-        const newRepeat = +((mode.repeat ?? "") + key);
-        changeMode({ ...mode, repeat: newRepeat });
+    if (state.mode !== "insert" && key.match(/^[0123456789]$/)) {
+        const newRepeat = +((state.repeat ?? "") + key);
+        changeState({ ...state, repeat: newRepeat });
         preventEvent(event);
         return;
     } else {
         // If not actively updating the repeat number, reset it
-        changeMode({ ...mode, repeat: undefined });
+        changeState({ ...state, repeat: undefined });
     }
 
-    const modeBindings = defaultVinputConfig[mode.type];
+    const modeBindings = defaultVinputConfig[state.mode];
     const keyBinding = modeBindings[key];
     if (!keyBinding) {
         // Exit motion mode if an invalid motion key was pressed
-        if (mode.type === "motion") changeMode({ type: mode.previous });
+        if (state.mode === "motion") changeState({ mode: state.previous });
         return;
     }
 
@@ -231,11 +145,11 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
 
     // If its an operator, switch to motion mode
     if (keyBinding.type === "operator") {
-        if (mode.type === "motion") {
+        if (state.mode === "motion") {
             console.error("Cannot perform an operator as a motion");
             return;
         }
-        changeMode({ type: "motion", operator: keyBinding.commands, previous: mode.type });
+        changeState({ mode: "motion", operator: keyBinding.commands, previous: state.mode });
         return;
     }
 
@@ -245,14 +159,14 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
     }
 
     // If the last mode was motion, then perform the operator
-    if (mode.type === "motion") {
+    if (state.mode === "motion") {
         // Add a tiny bit of delay to make the behavior more consistent
         await new Promise((resolve) => setTimeout(resolve, 20));
-        await performCommands(mode.operator);
+        await performCommands(state.operator);
 
         // If still in motion mode, restore the old mode
-        if (mode.type === "motion") {
-            changeMode({ type: mode.previous });
+        if (state.mode === "motion") {
+            changeState({ mode: state.previous });
         }
     }
 }
@@ -263,16 +177,16 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
 window.addEventListener("selectionchange", () => {
     if (handlingKeydown) return;
 
-    if (mode.type === "motion") changeMode({ type: mode.previous });
+    if (state.mode === "motion") changeState({ mode: state.previous });
 
     const active = document.activeElement as HTMLInputElement | undefined;
     const start = active?.selectionStart;
     const end = active?.selectionEnd;
     const selecting = start !== undefined && end !== undefined && start !== end;
 
-    if (selecting && mode.type === "normal") {
-        changeMode({ type: "visual" });
-    } else if (!selecting && mode.type === "visual") {
-        changeMode({ type: "normal" });
+    if (selecting && state.mode === "normal") {
+        changeState({ mode: "visual" });
+    } else if (!selecting && state.mode === "visual") {
+        changeState({ mode: "normal" });
     }
 });

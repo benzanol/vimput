@@ -3,7 +3,7 @@
     "name": "vinput",
     "version": "1.0",
     "description": "Simulate ArrowLeft key event after clicking extension button",
-    "permissions": ["debugger", "activeTab"],
+    "permissions": ["debugger", "activeTab", "storage"],
     "background": {
         "service_worker": "dist/background.js"
     },

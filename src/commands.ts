@@ -1,4 +1,4 @@
-const vinputCommands = {
+export const commandTypes = {
     Modes: {
         Normal: {
             description: "Switch to normal mode",
@@ -122,4 +122,15 @@ const vinputCommands = {
         },
     },
 } as const;
-export default vinputCommands;
+
+export type CommandType = keyof typeof commandTypes;
+export type CommandName = { [K in CommandType]: keyof typeof commandTypes[K] }[CommandType];
+export type CommandDef = {
+    description: string;
+    keys?: readonly KeyCombo[];
+    mode?: "insert" | "normal" | "visual";
+};
+
+export const flattenedCommands = Object.fromEntries(
+    Object.values(commandTypes).flatMap((type) => Object.entries(type)),
+) as Record<CommandName, CommandDef>;

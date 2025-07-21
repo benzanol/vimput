@@ -64,7 +64,7 @@
                 display: inline-block;
             }
 
-            textarea {
+            #config {
                 width: 100%;
                 height: 20em;
                 resize: none;
@@ -74,7 +74,7 @@
                 display: none;
             }
 
-            #save-button {
+            #save {
                 margin: 1em 0;
                 padding: 0.7em;
                 width: 5em;
@@ -118,9 +118,9 @@
             <div id="commands"></div>
         </div>
 
-        <textarea id="input"></textarea>
+        <textarea id="config"></textarea>
         <div id="error" class="error">Error message</div>
-        <button id="save-button">Save</button>
+        <button id="save">Save</button>
     </body>
     <script src="dist/popup.js" type="module"></script>
 </html>
