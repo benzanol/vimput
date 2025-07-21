@@ -134,6 +134,8 @@ async function performCommands(commands: VinputCommand[]): Promise<void> {
         // Press the keys associated with the command
         for (const keyCombo of commandDef.keys ?? []) {
             await pressKey(keyCombo);
+            // Add a tiny bit of delay to ensure that every key gets run
+            await new Promise((resolve) => setTimeout(resolve, 1));
         }
 
         // Switch the mode associated with the command
@@ -191,7 +193,7 @@ const defaultVinputConfig: VinputConfig = {
 
         d: defOperator(["Cut"]),
         c: defOperator(["Cut", "Insert"]),
-        y: defOperator(["Copy"]),
+        y: defOperator(["Copy", "Right"]),
     },
     visual: {
         q: defCommand(["Normal", "Right"]),
@@ -350,13 +352,15 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
         return;
     }
 
-    // Reset the repeat
+    // Perform the actual command
     for (let i = 0; i < repeat; i++) {
         await performCommands(keyBinding.commands);
     }
 
     // If the last mode was motion, then perform the operator
     if (mode.type === "motion") {
+        // Add a tiny bit of delay to make the behavior more consistent
+        await new Promise((resolve) => setTimeout(resolve, 20));
         await performCommands(mode.operator);
 
         // If still in motion mode, restore the old mode
