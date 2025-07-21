@@ -184,6 +184,7 @@ const defaultVinputConfig: VinputConfig = {
         l: defCommand(["VisualRight"]),
         b: defCommand(["VisualBackwardWord"]),
         w: defCommand(["VisualForwardWord"]),
+        e: defCommand(["VisualForwardWord"]),
 
         i: defCommand(["Left", "Insert"]),
         a: defCommand(["Right", "Insert"]),
@@ -211,14 +212,14 @@ const defaultVinputConfig: VinputConfig = {
 // user provides a motion, and also which mode to return to after the
 // operator is performed.
 type Mode =
-    | { type: "insert" | "normal" | "visual" }
-    | { type: "motion"; operator: VinputCommand[]; previous: Mode };
+    | { type: "insert" | "normal" | "visual"; repeat?: number }
+    | { type: "motion"; repeat?: number; operator: VinputCommand[]; previous: Mode };
 
 let mode: Mode = { type: "insert" };
 
 function changeMode(newMode: Mode) {
     mode = newMode;
-    console.log("Changed Mode:", mode.type);
+    console.log("Changed Mode:", mode.type, mode.repeat);
 }
 
 // ==================== Handling Key Presses ====================
@@ -266,9 +267,25 @@ window.addEventListener("keydown", async (event) => {
         return;
     }
 
-    const modeBindings = defaultVinputConfig[mode.type];
+    const lastMode = mode;
+
+    // Check if it is a numeric argument
+    if (mode.type !== "insert" && key.match(/^[0123456789]$/)) {
+        const newRepeat = +((mode.repeat ?? "") + key);
+        changeMode({ ...mode, repeat: newRepeat });
+        preventEvent(event);
+        return;
+    } else {
+        // If not actively updating the repeat number, reset it
+        changeMode({ ...mode, repeat: undefined });
+    }
+
+    const modeBindings = defaultVinputConfig[lastMode.type];
     const keyBinding = modeBindings[key];
-    if (!keyBinding) return;
+    if (!keyBinding) {
+        if (lastMode.type === "motion") changeMode(lastMode.previous);
+        return;
+    }
 
     // Prevent whatever the key would have originally done
     preventEvent(event);
@@ -282,11 +299,12 @@ window.addEventListener("keydown", async (event) => {
     // If the last command was an operator, switch back to the mode
     // that was active before the operator. By restoring it early,
     // we account for if the motion or operator wants to set its own mode.
-    const lastMode = mode;
     if (lastMode.type === "motion") changeMode(lastMode.previous);
 
-    // Perform the commands associated with the keybinding
-    await performCommands(keyBinding.commands);
+    // Reset the repeat
+    for (let i = 0; i < (lastMode.repeat ?? 1); i++) {
+        await performCommands(keyBinding.commands);
+    }
 
     // If the last mode was motion, then perform the operator
     if (lastMode.type === "motion") {
