@@ -36,14 +36,30 @@ type VinputState =
 // Don't show the mode icon until the config is loaded
 let state: VinputState = { mode: "insert" };
 
-async function showModeIcon(mode: VinputState["mode"]): Promise<void> {
-    await chrome.runtime.sendMessage(null, { type: "changeMode", mode });
-}
+let caretColorElem: HTMLElement | null = null;
 
-function changeState(newState: VinputState) {
+function changeState(newState: VinputState, forceRefresh: boolean = false) {
     const modeChanged = newState.mode !== state.mode;
     state = newState;
-    if (modeChanged) showModeIcon(state.mode);
+    if (modeChanged || forceRefresh) {
+        // Remove the old caret color
+        if (caretColorElem !== null) {
+            caretColorElem.parentElement?.removeChild(caretColorElem);
+            caretColorElem = null;
+        }
+
+        // Set the new caret color
+        const capitalModeName = state.mode[0].toUpperCase() + state.mode.slice(1);
+        const newColor = config.settings[capitalModeName + "CaretColor"];
+        if (newColor) {
+            caretColorElem = document.createElement("style");
+            caretColorElem.textContent = `* {caret-color: ${newColor} !important;}`;
+            document.head.appendChild(caretColorElem);
+        }
+
+        // Change the mode icon
+        chrome.runtime.sendMessage(null, { type: "changeMode", mode: state.mode });
+    }
 }
 
 // ==================== Config ====================
@@ -62,7 +78,8 @@ chrome.storage.sync.get("config", (result) => {
         if (m === "insert" || m === "normal" || m === "visual") {
             state = { mode: m };
         }
-        showModeIcon(state.mode);
+        // Force update
+        changeState(state, true);
     }
 });
 

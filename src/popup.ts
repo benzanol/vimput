@@ -2,17 +2,31 @@ import { commandTypes } from "./utils/commands";
 import { defaultVinputConfigText, defaultVinputConfig, VinputConfig } from "./utils/config";
 import { parseConfiguration } from "./utils/parseConfig";
 
+// ==================== Elements ====================
+
+function checkElement<T extends Element>(id: string, cls: new (...args: any) => T): T {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`No element with id "${id}"`);
+    if (!(el instanceof cls)) throw new Error(`Element is not a ${cls.name}`);
+    return el;
+}
+
+const commandsElem = checkElement("commands", HTMLDivElement);
+const saveElem = checkElement("save", HTMLButtonElement);
+const configElem = checkElement("config", HTMLTextAreaElement);
+const defaultConfigElem = checkElement("default-config", HTMLTextAreaElement);
+const successElem = checkElement("success", HTMLDivElement);
+const errorElem = checkElement("error", HTMLDivElement);
+
 // ==================== Generate the command list ====================
 
-const container = document.getElementById("commands");
-if (!(container instanceof HTMLElement)) throw new Error("Invalid command container");
-container.replaceChildren();
+commandsElem.replaceChildren();
 
 for (const [type, cmds] of Object.entries(commandTypes)) {
     const typeDiv = document.createElement("div");
     typeDiv.className = "command-type";
     typeDiv.textContent = type;
-    container.appendChild(typeDiv);
+    commandsElem.appendChild(typeDiv);
 
     for (const [name, def] of Object.entries(cmds)) {
         const nameSpan = document.createElement("span");
@@ -24,7 +38,7 @@ for (const [type, cmds] of Object.entries(commandTypes)) {
 
         const cmdDiv = document.createElement("div");
         cmdDiv.append(nameSpan, keySpan);
-        container.appendChild(cmdDiv);
+        commandsElem.appendChild(cmdDiv);
     }
 }
 
@@ -33,15 +47,14 @@ for (const [type, cmds] of Object.entries(commandTypes)) {
 let configText: string | null = null;
 
 function setUserMessage(message: string, error: boolean = false) {
-    document.getElementById("success")!.textContent = error ? "" : message;
-    document.getElementById("error")!.textContent = error ? message : "";
+    successElem.textContent = error ? "" : message;
+    errorElem.textContent = error ? message : "";
 }
 
 // Add save button listener
-document.getElementById("save")!.addEventListener("click", async () => {
+saveElem.addEventListener("click", async () => {
     try {
-        const textarea = document.getElementById("config") as HTMLTextAreaElement;
-        const output = parseConfiguration(textarea.value, defaultVinputConfig);
+        const output = parseConfiguration(configElem.value, defaultVinputConfig);
 
         // Show feedback to user
         if (typeof output === "string") {
@@ -51,10 +64,10 @@ document.getElementById("save")!.addEventListener("click", async () => {
 
         // Save config
         await chrome.storage.sync.set<ExtensionStorage>({
-            configText: textarea.value,
+            configText: configElem.value,
             config: typeof output === "string" ? undefined : output,
         });
-        configText = textarea.value;
+        configText = configElem.value;
         updateSaveButton();
         setUserMessage("Your configuration has been saved!");
     } catch (e) {
@@ -65,19 +78,18 @@ document.getElementById("save")!.addEventListener("click", async () => {
 // ==================== On input ====================
 
 function updateSaveButton() {
-    const textarea = document.getElementById("config") as HTMLTextAreaElement;
+    const textarea = configElem;
     const disabled = textarea.value === configText;
-    (document.getElementById("save") as HTMLButtonElement).disabled = disabled;
+    saveElem.disabled = disabled;
 }
 
-document.getElementById("config")!.addEventListener("input", updateSaveButton);
+configElem.addEventListener("input", updateSaveButton);
 
 // ==================== Load config ====================
 
 const defText = defaultVinputConfigText.trim();
-const defConfigElem = document.getElementById("default-config") as HTMLTextAreaElement;
-defConfigElem.value = defText;
-defConfigElem.rows = defText.split("\n").length;
+defaultConfigElem.value = defText;
+defaultConfigElem.rows = defText.split("\n").length;
 
 type ExtensionStorage = {
     configText?: string;
@@ -86,7 +98,7 @@ type ExtensionStorage = {
 
 // Get data
 chrome.storage.sync.get<ExtensionStorage>("configText", (result) => {
-    const textarea = document.getElementById("config") as HTMLTextAreaElement;
+    const textarea = configElem;
     configText = result.configText ?? "";
     textarea.value = configText;
     updateSaveButton();

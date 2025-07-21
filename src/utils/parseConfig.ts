@@ -11,6 +11,12 @@ const mapKeywords: Record<string, ("insert" | "normal" | "visual" | "motion")[]>
     "map!": ["normal", "visual", "motion", "insert"],
 };
 
+function isValidColor(color: string): boolean {
+    const s = new Option().style;
+    s.color = color;
+    return s.color !== "";
+}
+
 // Parse the vinput config, and return an error message if parsing failed
 export function parseConfiguration(text: string, def?: VinputConfig): VinputConfig | string {
     // Create a deep (enough) copy of the default config
@@ -45,8 +51,10 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
                 if (!["insert", "normal", "visual"].includes(segs[2])) {
                     return `Line ${i + 1}: Default mode must be insert, normal, or visual.`;
                 }
+            } else if (segs[1].match(/^(Normal|Visual|Insert|Motion)CaretColor$/)) {
+                if (!isValidColor(segs[2])) return `Line ${i + 1}: Invalid color '${segs[2]}'`;
             } else {
-                return `Line ${i + 1}: Invalid setting: ${segs[1]}`;
+                return `Line ${i + 1}: Invalid setting '${segs[1]}'`;
             }
 
             config.settings[segs[1]] = segs[2];
@@ -63,7 +71,7 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
         const keyBase = keySegs[keySegs.length - 1];
         const keyMods = keySegs.slice(0, keySegs.length - 1);
         const invalidMod = keyMods.find((mod) => !mod.match(/^[ACS]$/));
-        if (invalidMod) return `Line ${i + 1}: Invalid key modifier: ${invalidMod}`;
+        if (invalidMod) return `Line ${i + 1}: Invalid key modifier '${invalidMod}'`;
 
         // Add a shift prefix to certain keys
         const missingShift = keyBase.match(/[A-Z~!@#$%^&*()_+{}|:"<>?]/) && !keyMods.includes("S");
