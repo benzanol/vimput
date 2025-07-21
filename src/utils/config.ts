@@ -25,12 +25,12 @@ imap C-q Normal
 # Entering insert mode
 nmap i Insert
 nmap a Right Insert
-nmap S-I LineStart Insert
-nmap S-A LineEnd Insert
+nmap I LineStart Insert
+nmap A LineEnd Insert
 nmap o LineEnd Enter Insert
-nmap S-O LineStart Enter Up Insert
+nmap O LineStart Enter Up Insert
 nmap s Delete Insert
-nmap S-S LineStart VisualLineEnd Backspace Insert
+nmap S LineStart SelectLineEnd Backspace Insert
 
 # Navigation
 nmap h Left
@@ -40,32 +40,32 @@ nmap l Right
 nmap b BackwardWord
 nmap w ForwardWord
 nmap e ForwardWord
-nmap S-^ LineStart
-nmap S-$ LineEnd
+nmap ^ LineStart
+nmap $ LineEnd
 nmap g Top
-nmap S-G Bottom
+nmap G Bottom
 
 # Deleting
 nmap x Delete
-nmap S-X Backspace
+nmap X Backspace
 nmap z DeleteWord
-nmap S-Z BackspaceWord
+nmap Z BackspaceWord
 
 # Miscellaneous
 nmap v Visual
-nmap S-V LineStart VisualLineEnd Visual
+nmap V LineStart SelectLineEnd Visual
 nmap p Paste
 nmap u Undo
-nmap S-U Redo
-nmap S-J LineEnd Delete
+nmap U Redo
+nmap J LineEnd Delete
 
 # Operators
 nmap d operator Cut
 nmap c operator Cut Insert
 nmap y operator Copy Right
-nmap S-D VisualLineEnd Cut
-nmap S-C VisualLineEnd Cut Insert
-nmap S-Y VisualLineEnd Copy Left
+nmap D SelectLineEnd Cut
+nmap C SelectLineEnd Cut Insert
+nmap Y SelectLineEnd Copy Left
 
 # Exiting visual mode
 xmap q Right Normal
@@ -77,27 +77,27 @@ xmap d Cut Normal
 xmap y Copy
 
 # Visual/motion navigation
-oxmap h VisualLeft
-oxmap j VisualDown
-oxmap k VisualUp
-oxmap l VisualRight
-oxmap b VisualBackwardWord
-oxmap w VisualForwardWord
-oxmap e VisualForwardWord
-oxmap S-^ VisualLineStart
-oxmap S-$ VisualLineEnd
-oxmap g VisualTop
-oxmap S-G VisualBottom
+oxmap h SelectLeft
+oxmap j SelectDown
+oxmap k SelectUp
+oxmap l SelectRight
+oxmap b SelectBackwardWord
+oxmap w SelectForwardWord
+oxmap e SelectForwardWord
+oxmap ^ SelectLineStart
+oxmap $ SelectLineEnd
+oxmap g SelectTop
+oxmap G SelectBottom
 
 # Operate on the whole line
-omap d LineStart VisualLineEnd
-omap c LineStart VisualLineEnd
-omap y LineStart VisualLineEnd
+omap d LineStart SelectLineEnd
+omap c LineStart SelectLineEnd
+omap y LineStart SelectLineEnd
 
 # Select the current word
-oxmap S-W BackwardWord VisualForwardWord
+oxmap W BackwardWord SelectForwardWord
 # Select everything
-oxmap S-A Top VisualBottom
+oxmap A Top SelectBottom
 `;
 
 const parsed = parseConfiguration(defaultVinputConfigText);

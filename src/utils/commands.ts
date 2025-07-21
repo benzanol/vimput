@@ -55,44 +55,44 @@ export const commandTypes = {
             keys: ["C-End"],
         },
     },
-    "Visual Navigation": {
-        VisualLeft: {
+    "Navigation with Selection": {
+        SelectLeft: {
             description: "Expand selection left",
             keys: ["S-ArrowLeft"],
         },
-        VisualRight: {
+        SelectRight: {
             description: "Expand selection right",
             keys: ["S-ArrowRight"],
         },
-        VisualDown: {
+        SelectDown: {
             description: "Expand selection down",
             keys: ["S-ArrowDown"],
         },
-        VisualUp: {
+        SelectUp: {
             description: "Expand selection up",
             keys: ["S-ArrowUp"],
         },
-        VisualBackwardWord: {
+        SelectBackwardWord: {
             description: "Expand selection to previous word",
             keys: ["C-S-ArrowLeft"],
         },
-        VisualForwardWord: {
+        SelectForwardWord: {
             description: "Expand selection to next word",
             keys: ["C-S-ArrowRight"],
         },
-        VisualLineStart: {
+        SelectLineStart: {
             description: "Expand selection to the start of the line",
             keys: ["S-Home"],
         },
-        VisualLineEnd: {
+        SelectLineEnd: {
             description: "Expand selection to the end of the line",
             keys: ["S-End"],
         },
-        VisualTop: {
+        SelectTop: {
             description: "Expand selection to the start of the editable area",
             keys: ["C-S-Home"],
         },
-        VisualBottom: {
+        SelectBottom: {
             description: "Expand selection to the end of the editable area",
             keys: ["C-S-End"],
         },

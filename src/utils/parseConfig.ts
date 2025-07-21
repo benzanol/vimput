@@ -58,7 +58,20 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
         if (!modes) return `Line ${i + 1}: Unknown statement type '${segs[0]}'`;
         if (segs.length === 1) return `Line ${i + 1}: Not enough arguments for '${segs[0]}'`;
 
-        const key = segs[1];
+        // Get the key into a standardized format
+        const keySegs = segs[1].split("-");
+        const keyBase = keySegs[keySegs.length - 1];
+        const keyMods = keySegs.slice(0, keySegs.length - 1);
+        const invalidMod = keyMods.find((mod) => !mod.match(/^[ACS]$/));
+        if (invalidMod) return `Line ${i + 1}: Invalid key modifier: ${invalidMod}`;
+
+        // Add a shift prefix to certain keys
+        const missingShift = keyBase.match(/[A-Z~!@#$%^&*()_+{}|:"<>?]/) && !keyMods.includes("S");
+        if (missingShift) keyMods.push("S");
+
+        // Recombine the key segments
+        const key = [...keyMods.sort(), keyBase].join("-");
+
         const isOperator = segs[2] === "operator";
         const commands = isOperator ? segs.slice(3) : segs.slice(2);
 
