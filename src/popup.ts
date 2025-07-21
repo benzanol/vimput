@@ -1,6 +1,5 @@
-import { CommandName, commandTypes, flattenedCommands } from "./commands.js";
-import defaultVinputConfig from "./config.js";
-import type { VinputConfig, VinputState } from "./content.js";
+import { CommandName, commandTypes, flattenedCommands } from "./utils/commands";
+import defaultVinputConfig, { VinputConfig } from "./utils/config";
 
 // ==================== Generate the command list ====================
 
@@ -30,7 +29,7 @@ for (const [type, cmds] of Object.entries(commandTypes)) {
 
 // ==================== Save config ====================
 
-const mapKeywords: Record<string, VinputState["mode"][]> = {
+const mapKeywords: Record<string, ("insert" | "normal" | "visual" | "motion")[]> = {
     nmap: ["normal"],
     imap: ["insert"],
     xmap: ["visual"],
@@ -57,9 +56,7 @@ function parseConfiguration(text: string): VinputConfig | string {
     const lines = text.split("\n");
     for (let i = 0; i < lines.length; i++) {
         const segs = lines[i].split(/[ \t]+/).filter((s) => s);
-        console.log(segs);
         if (segs.length === 0 || segs[0].startsWith("#")) continue;
-        console.log(2);
 
         // Check if this is a unmapAll statement
         if (segs[0] === "unmapAll") {
@@ -70,17 +67,14 @@ function parseConfiguration(text: string): VinputConfig | string {
             continue;
         }
 
-        console.log(3);
         // Check if this is a valid map statement
         const modes = mapKeywords[segs[0]];
         if (!modes) return `Line ${i + 1}: Unknown statement type '${segs[0]}'`;
         if (segs.length === 1) return `Line ${i + 1}: Not enough arguments for '${segs[0]}'`;
-        console.log(4);
 
         const key = segs[1];
         const isOperator = segs[2] === "operator";
         const commands = isOperator ? segs.slice(3) : segs.slice(2);
-        console.log(5);
 
         // No empty operator
         if (isOperator && commands.length === 0) {
@@ -88,7 +82,6 @@ function parseConfiguration(text: string): VinputConfig | string {
         }
 
         // Ensure that the commands are valid
-        console.log(commands);
         for (const cmd of commands) {
             if (!(cmd in flattenedCommands)) {
                 return `Line ${i + 1}: Unknown command ${cmd}`;

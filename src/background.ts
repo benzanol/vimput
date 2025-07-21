@@ -38,8 +38,6 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 // ==================== Sending Keys ====================
 
 const KEYS = {
-    End: 35,
-    Home: 36,
     ArrowLeft: 37,
     ArrowUp: 38,
     ArrowRight: 39,
@@ -114,10 +112,9 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
         performKeyPress(tabId, message.key as KeyCombo).finally(() => respond());
         return true;
     } else if (message.type === "changeMode") {
-        const mode = message.mode.type;
         chrome.action.setIcon({
             tabId,
-            path: { "128": `/icons/${mode}.png` },
+            path: { "128": `/resources/icons/${message.mode}.png` },
         });
     }
 });

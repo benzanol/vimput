@@ -1,6 +1,6 @@
 // ==================== Commands ====================
 
-import { CommandName, flattenedCommands } from "./commands";
+import { CommandName, flattenedCommands } from "./utils/commands";
 
 async function performCommands(commands: CommandName[]): Promise<void> {
     for (const command of commands) {
@@ -18,29 +18,30 @@ async function performCommands(commands: CommandName[]): Promise<void> {
     }
 }
 
-// ==================== Default Config ====================
+// ==================== Config ====================
 
-// An action can either be a 'command', which executes normally, or an
-// 'operator', which first waits for a motion, and then executes.
-type VinputAction = { type: "command" | "operator"; commands: CommandName[] };
+import defaultVinputConfig, { type VinputConfig } from "./utils/config";
 
-// A mapping from keybindings to lists of commands
-type VinputConfigKeymap = Record<string, VinputAction>;
-export type VinputConfig = {
-    insert: VinputConfigKeymap;
-    normal: VinputConfigKeymap;
-    visual: VinputConfigKeymap;
-    motion: VinputConfigKeymap;
-};
+let config: VinputConfig = defaultVinputConfig;
 
-import defaultVinputConfig from "./config";
+// Get the stored config
+chrome.storage.sync.get("config", (result) => {
+    if (result.config) config = result.config;
+});
+
+// Listen for when the stored config changes
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === "sync" && changes.config) {
+        config = changes.config.newValue;
+    }
+});
 
 // ==================== Mode ====================
 
 // For the motion mode, we need to know which operator to run once the
 // user provides a motion, and also which mode to return to after the
 // operator is performed.
-export type VinputState =
+type VinputState =
     | { mode: "insert" | "normal" | "visual"; repeat?: number }
     | {
           mode: "motion";
@@ -132,7 +133,7 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
         changeState({ ...state, repeat: undefined });
     }
 
-    const modeBindings = defaultVinputConfig[state.mode];
+    const modeBindings = config[state.mode];
     const keyBinding = modeBindings[key];
     if (!keyBinding) {
         // Exit motion mode if an invalid motion key was pressed

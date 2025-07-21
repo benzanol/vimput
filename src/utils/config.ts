@@ -1,4 +1,17 @@
-import type { VinputConfig } from "./content";
+import type { CommandName } from "./commands";
+
+// An action can either be a 'command', which executes normally, or an
+// 'operator', which first waits for a motion, and then executes.
+type VinputAction = { type: "command" | "operator"; commands: CommandName[] };
+
+// A mapping from keybindings to lists of commands
+type VinputConfigKeymap = Record<string, VinputAction>;
+export type VinputConfig = {
+    insert: VinputConfigKeymap;
+    normal: VinputConfigKeymap;
+    visual: VinputConfigKeymap;
+    motion: VinputConfigKeymap;
+};
 
 const defaultVinputConfig: VinputConfig = {
     insert: {
