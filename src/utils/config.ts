@@ -12,17 +12,23 @@ export type VinputConfig = {
     normal: VinputConfigKeymap;
     visual: VinputConfigKeymap;
     motion: VinputConfigKeymap;
+    settings: Record<string, string>;
 };
 
 export const defaultVinputConfigText = `
+# Start in insert mode
+set DefaultMode insert
+
+# Entering normal mode
 imap C-q Normal
 
+# Entering insert mode
 nmap i Insert
 nmap a Right Insert
 nmap S-I BackwardWord Insert
 nmap S-A ForwardWord Insert
-nmap v Visual
 
+# Navigation
 nmap h Left
 nmap j Down
 nmap k Up
@@ -33,22 +39,33 @@ nmap e ForwardWord
 nmap S-^ LineStart
 nmap S-$ LineEnd
 
+# Deleting
 nmap x Delete
 nmap S-X DeleteWord
 nmap z Backspace
 nmap S-Z BackspaceWord
 
+# Miscellaneous
+nmap v Visual
+nmap p Paste
 nmap u Undo
 nmap S-U Redo
 
-nmap p Paste
-
+# Operators
 nmap d operator Cut
 nmap c operator Cut Insert
 nmap y operator Copy Right
 
-xmap q Normal Right
+# Exiting visual mode
+xmap q Right Normal
+xmap i Left Insert
+xmap a Right Insert
 
+xmap c Cut Insert
+xmap d Cut Normal
+xmap y Copy
+
+# Visual/motion navigation
 oxmap h VisualLeft
 oxmap j VisualDown
 oxmap k VisualUp
@@ -59,17 +76,12 @@ oxmap e VisualForwardWord
 oxmap S-^ VisualLineStart
 oxmap S-$ VisualLineEnd
 
-xmap i Left Insert
-xmap a Right Insert
-
-xmap c Cut Insert
-xmap d Cut Normal
-xmap y Copy
-
+# Operate on the whole line
 omap d LineStart VisualLineEnd
 omap c LineStart VisualLineEnd
 omap y LineStart VisualLineEnd
 
+# Operate on the current word
 omap S-W BackwardWord VisualForwardWord
 `;
 

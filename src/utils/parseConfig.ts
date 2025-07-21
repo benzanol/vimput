@@ -19,6 +19,7 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
         normal: { ...def?.normal },
         visual: { ...def?.visual },
         motion: { ...def?.motion },
+        settings: { ...def?.settings },
     };
 
     const lines = text.split("\n");
@@ -32,6 +33,23 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
             config.normal = {};
             config.visual = {};
             config.motion = {};
+            continue;
+        }
+
+        // Check if this is a set statement
+        if (segs[0] === "set") {
+            if (segs.length < 3) return `Line ${i + 1}: Not enough arguments for set`;
+            if (segs.length > 3) return `Line ${i + 1}: Too many arguments for set`;
+
+            if (segs[1] === "DefaultMode") {
+                if (!["insert", "normal", "visual"].includes(segs[2])) {
+                    return `Line ${i + 1}: Default mode must be insert, normal, or visual.`;
+                }
+            } else {
+                return `Line ${i + 1}: Invalid setting: ${segs[1]}`;
+            }
+
+            config.settings[segs[1]] = segs[2];
             continue;
         }
 

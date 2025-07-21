@@ -18,24 +18,6 @@ async function performCommands(commands: CommandName[]): Promise<void> {
     }
 }
 
-// ==================== Config ====================
-
-import { defaultVinputConfig, type VinputConfig } from "./utils/config";
-
-let config: VinputConfig = defaultVinputConfig;
-
-// Get the stored config
-chrome.storage.sync.get("config", (result) => {
-    if (result.config) config = result.config;
-});
-
-// Listen for when the stored config changes
-chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === "sync" && changes.config) {
-        config = changes.config.newValue;
-    }
-});
-
 // ==================== Mode ====================
 
 // For the motion mode, we need to know which operator to run once the
@@ -50,17 +32,45 @@ type VinputState =
           previous: "insert" | "normal" | "visual";
       };
 
-// Initially change the mode in order to set the extension icon
-let state: VinputState = { mode: "normal" };
-changeState({ mode: "insert" });
+// Don't show the mode icon until the config is loaded
+let state: VinputState = { mode: "insert" };
+
+async function showModeIcon(mode: VinputState["mode"]): Promise<void> {
+    await chrome.runtime.sendMessage(null, { type: "changeMode", mode });
+}
 
 function changeState(newState: VinputState) {
-    if (newState.mode !== state.mode) {
-        chrome.runtime.sendMessage(null, { type: "changeMode", mode: newState.mode });
-    }
-
+    const modeChanged = newState.mode !== state.mode;
     state = newState;
+    if (modeChanged) showModeIcon(state.mode);
 }
+
+// ==================== Config ====================
+
+import { defaultVinputConfig, type VinputConfig } from "./utils/config";
+
+let config: VinputConfig = defaultVinputConfig;
+
+// Get the stored config
+chrome.storage.sync.get("config", (result) => {
+    if (result.config) {
+        config = result.config;
+
+        // Set the default mode
+        const m = config.settings.DefaultMode;
+        if (m === "insert" || m === "normal" || m === "visual") {
+            state = { mode: m };
+        }
+        showModeIcon(state.mode);
+    }
+});
+
+// Listen for when the stored config changes
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === "sync" && changes.config) {
+        config = changes.config.newValue;
+    }
+});
 
 // ==================== Handling Key Presses ====================
 
