@@ -28,7 +28,7 @@ for (const [type, cmds] of Object.entries(commandTypes)) {
     }
 }
 
-// ==================== Save data ====================
+// ==================== Save config ====================
 
 const mapKeywords: Record<string, VinputState["mode"][]> = {
     nmap: ["normal"],
@@ -38,6 +38,11 @@ const mapKeywords: Record<string, VinputState["mode"][]> = {
     map: ["normal", "visual", "motion"],
     "map!": ["normal", "visual", "motion", "insert"],
 };
+
+function setUserMessage(message: string, error: boolean = false) {
+    document.getElementById("success")!.textContent = error ? "" : message;
+    document.getElementById("error")!.textContent = error ? message : "";
+}
 
 // Parse the vinput config, and return an error message if parsing failed
 function parseConfiguration(text: string): VinputConfig | string {
@@ -51,8 +56,10 @@ function parseConfiguration(text: string): VinputConfig | string {
 
     const lines = text.split("\n");
     for (let i = 0; i < lines.length; i++) {
-        const segs = lines[i].trim().split(/ \t+/);
+        const segs = lines[i].split(/[ \t]+/).filter((s) => s);
+        console.log(segs);
         if (segs.length === 0 || segs[0].startsWith("#")) continue;
+        console.log(2);
 
         // Check if this is a unmapAll statement
         if (segs[0] === "unmapAll") {
@@ -63,14 +70,17 @@ function parseConfiguration(text: string): VinputConfig | string {
             continue;
         }
 
+        console.log(3);
         // Check if this is a valid map statement
         const modes = mapKeywords[segs[0]];
         if (!modes) return `Line ${i + 1}: Unknown statement type '${segs[0]}'`;
         if (segs.length === 1) return `Line ${i + 1}: Not enough arguments for '${segs[0]}'`;
+        console.log(4);
 
         const key = segs[1];
         const isOperator = segs[2] === "operator";
         const commands = isOperator ? segs.slice(3) : segs.slice(2);
+        console.log(5);
 
         // No empty operator
         if (isOperator && commands.length === 0) {
@@ -78,6 +88,7 @@ function parseConfiguration(text: string): VinputConfig | string {
         }
 
         // Ensure that the commands are valid
+        console.log(commands);
         for (const cmd of commands) {
             if (!(cmd in flattenedCommands)) {
                 return `Line ${i + 1}: Unknown command ${cmd}`;
@@ -100,14 +111,38 @@ function parseConfiguration(text: string): VinputConfig | string {
     return config;
 }
 
-function onSave() {
-    // Save data
-    chrome.storage.sync.set({ theme: "dark" }, () => {
-        console.log("Theme saved.");
-    });
-}
+// Add save button listener
+document.getElementById("save")!.addEventListener("click", async () => {
+    try {
+        const textarea = document.getElementById("config") as HTMLTextAreaElement;
+        const output = parseConfiguration(textarea.value);
+
+        // Show feedback to user
+        if (typeof output === "string") {
+            setUserMessage(output, true);
+            return;
+        }
+
+        // Save config
+        await chrome.storage.sync.set<ExtensionStorage>({
+            configText: textarea.value,
+            config: typeof output === "string" ? undefined : output,
+        });
+        setUserMessage("Your configuration has been saved!");
+    } catch (e) {
+        setUserMessage(`Error saving config: ${e}`);
+    }
+});
+
+// ==================== Load config ====================
+
+type ExtensionStorage = {
+    configText?: string;
+    config?: VinputConfig;
+};
 
 // Get data
-chrome.storage.sync.get("theme", (result) => {
-    console.log("Theme is", result.theme);
+chrome.storage.sync.get<ExtensionStorage>("configText", (result) => {
+    const textarea = document.getElementById("config") as HTMLTextAreaElement;
+    textarea.value = result.configText ?? "";
 });
