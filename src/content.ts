@@ -213,7 +213,12 @@ const defaultVinputConfig: VinputConfig = {
 // operator is performed.
 type Mode =
     | { type: "insert" | "normal" | "visual"; repeat?: number }
-    | { type: "motion"; repeat?: number; operator: VinputCommand[]; previous: Mode };
+    | {
+          type: "motion";
+          repeat?: number;
+          operator: VinputCommand[];
+          previous: "insert" | "normal" | "visual";
+      };
 
 // Initially change the mode in order to set the extension icon
 let mode: Mode = { type: "normal" };
@@ -288,23 +293,28 @@ window.addEventListener("keydown", async (event) => {
     const modeBindings = defaultVinputConfig[lastMode.type];
     const keyBinding = modeBindings[key];
     if (!keyBinding) {
-        if (lastMode.type === "motion") changeMode(lastMode.previous);
+        // Exit motion mode if an invalid motion key was pressed
+        if (lastMode.type === "motion") changeMode({ type: lastMode.previous });
         return;
     }
 
     // Prevent whatever the key would have originally done
     preventEvent(event);
 
-    // If its an operator, wait for a motion
+    // If its an operator, switch to motion mode
     if (keyBinding.type === "operator") {
-        changeMode({ type: "motion", operator: keyBinding.commands, previous: mode });
+        if (mode.type === "motion") {
+            console.error("Cannot perform an operator as a motion");
+            return;
+        }
+        changeMode({ type: "motion", operator: keyBinding.commands, previous: mode.type });
         return;
     }
 
     // If the last command was an operator, switch back to the mode
     // that was active before the operator. By restoring it early,
     // we account for if the motion or operator wants to set its own mode.
-    if (lastMode.type === "motion") changeMode(lastMode.previous);
+    if (lastMode.type === "motion") changeMode({ type: lastMode.previous });
 
     // Reset the repeat
     for (let i = 0; i < (lastMode.repeat ?? 1); i++) {
