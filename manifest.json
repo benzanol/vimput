@@ -13,11 +13,7 @@
             "js": ["dist/content.js"]
         }
     ],
-    "action": {},
-    "web_accessible_resources": [
-        {
-            "resources": ["icons/*.png"],
-            "matches": ["<all_urls>"]
-        }
-    ]
+    "action": {
+        "default_popup": "popup.html"
+    }
 }
