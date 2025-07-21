@@ -255,8 +255,21 @@ async function pressKey(key: KeyCombo): Promise<void> {
 }
 
 // Detect all key presses
-let lastKey: string | undefined = undefined;
+let handlingKeydown = false;
 window.addEventListener("keydown", async (event) => {
+    handlingKeydown = true;
+    try {
+        await handleKeydown(event);
+    } finally {
+        // By waiting before setting to false the keydown, the
+        // selection change listener runs before it is set to false,
+        // meaning that if a command makes the visual selection have
+        // length 0, visual mode will not be immediately disabled
+        setTimeout(() => (handlingKeydown = false), 0);
+    }
+});
+
+async function handleKeydown(event: KeyboardEvent): Promise<void> {
     let key = event.key;
     if (event.shiftKey) key = "S-" + key;
     if (event.ctrlKey) key = "C-" + key;
@@ -277,7 +290,7 @@ window.addEventListener("keydown", async (event) => {
         return;
     }
 
-    const lastMode = mode;
+    const repeat = mode.repeat ?? 1;
 
     // Check if it is a numeric argument
     if (mode.type !== "insert" && key.match(/^[0123456789]$/)) {
@@ -290,11 +303,11 @@ window.addEventListener("keydown", async (event) => {
         changeMode({ ...mode, repeat: undefined });
     }
 
-    const modeBindings = defaultVinputConfig[lastMode.type];
+    const modeBindings = defaultVinputConfig[mode.type];
     const keyBinding = modeBindings[key];
     if (!keyBinding) {
         // Exit motion mode if an invalid motion key was pressed
-        if (lastMode.type === "motion") changeMode({ type: lastMode.previous });
+        if (mode.type === "motion") changeMode({ type: mode.previous });
         return;
     }
 
@@ -311,27 +324,31 @@ window.addEventListener("keydown", async (event) => {
         return;
     }
 
-    // If the last command was an operator, switch back to the mode
-    // that was active before the operator. By restoring it early,
-    // we account for if the motion or operator wants to set its own mode.
-    if (lastMode.type === "motion") changeMode({ type: lastMode.previous });
-
     // Reset the repeat
-    for (let i = 0; i < (lastMode.repeat ?? 1); i++) {
+    for (let i = 0; i < repeat; i++) {
         await performCommands(keyBinding.commands);
     }
 
     // If the last mode was motion, then perform the operator
-    if (lastMode.type === "motion") {
-        await performCommands(lastMode.operator);
+    if (mode.type === "motion") {
+        await performCommands(mode.operator);
+
+        // If still in motion mode, restore the old mode
+        if (mode.type === "motion") {
+            changeMode({ type: mode.previous });
+        }
     }
-});
+}
 
 // ==================== Updating Mode from Events ====================
 
 // Enable visual mode when selecting in normal mode
 const win = window;
 window.addEventListener("selectionchange", () => {
+    if (handlingKeydown) return;
+
+    if (mode.type === "motion") changeMode({ type: mode.previous });
+
     const active = document.activeElement as HTMLInputElement | undefined;
     const start = active?.selectionStart;
     const end = active?.selectionEnd;
@@ -339,5 +356,7 @@ window.addEventListener("selectionchange", () => {
 
     if (selecting && mode.type === "normal") {
         changeMode({ type: "visual" });
+    } else if (!selecting && mode.type === "visual") {
+        changeMode({ type: "normal" });
     }
 });
