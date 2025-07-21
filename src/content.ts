@@ -139,13 +139,13 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
         if (pressingKey === key) {
             // This is an event triggered by the extension simulating a
             // key (well probably, it technically could be a coincidence)
-            console.log("Extension Pressed:", key);
+            // console.log("Extension Pressed:", key);
         } else {
             // The user pressed a key while the extension was in the
             // process of performing a keybind. In this case, block the
             // user's key press.
             preventEvent(event);
-            console.log("Blocked Overlapping Event:", key, pressingKey);
+            // console.log("Blocked Overlapping Event:", key, pressingKey);
         }
         return;
     }

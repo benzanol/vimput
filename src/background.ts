@@ -92,7 +92,6 @@ async function performKeyEvent(tabId: number, type: EventType, combo: KeyCombo):
     const code = KEY_CODES[key] ?? key; // None of the keys used require a different key code
     const windowsVirtualKeyCode = KEYS[key as Key];
     const event = { type, code, key, windowsVirtualKeyCode, modifiers };
-    console.error(JSON.stringify(event));
 
     return new Promise((resolve) => {
         chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", event, () => {
