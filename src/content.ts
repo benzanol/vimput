@@ -70,17 +70,15 @@ let config: VinputConfig = defaultVinputConfig;
 
 // Get the stored config
 chrome.storage.sync.get("config", (result) => {
-    if (result.config) {
-        config = result.config;
+    config = result.config ?? defaultVinputConfig;
 
-        // Set the default mode
-        const m = config.settings.DefaultMode;
-        if (m === "insert" || m === "normal" || m === "visual") {
-            state = { mode: m };
-        }
-        // Force update
-        changeState(state, true);
+    // Set the default mode
+    const m = config.settings.DefaultMode;
+    if (m === "insert" || m === "normal" || m === "visual") {
+        state = { mode: m };
     }
+    // Force update
+    changeState(state, true);
 });
 
 // Listen for when the stored config changes

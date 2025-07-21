@@ -1,7 +1,7 @@
 const path = require("path");
 
 module.exports = {
-    mode: "development", // or "production"
+    mode: "development",
     entry: {
         background: "./src/background.ts",
         content: "./src/content.ts",
@@ -23,6 +23,4 @@ module.exports = {
             },
         ],
     },
-    // Optional: generate source maps
-    devtool: "source-map",
 };
