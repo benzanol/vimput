@@ -100,6 +100,8 @@ async function performKeyPress(tabId: number, combo: KeyCombo): Promise<void> {
     await performKeyEvent(tabId, "keyUp", combo);
 }
 
+// ==================== Message Listener ====================
+
 // Send keys sent from content.ts
 chrome.runtime.onMessage.addListener(async (message, sender, respond) => {
     if (sender.tab?.id && message.type === "pressKey") {
