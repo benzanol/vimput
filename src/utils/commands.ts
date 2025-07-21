@@ -47,24 +47,6 @@ export const commandTypes = {
             keys: ["End"],
         },
     },
-    Deleting: {
-        Backspace: {
-            description: "Delete character before the cursor",
-            keys: ["Backspace"],
-        },
-        Delete: {
-            description: "Delete character after the cursor",
-            keys: ["Delete"],
-        },
-        BackspaceWord: {
-            description: "Delete previous word",
-            keys: ["C-Backspace"],
-        },
-        DeleteWord: {
-            description: "Delete next word",
-            keys: ["C-Delete"],
-        },
-    },
     "Visual Navigation": {
         VisualLeft: {
             description: "Expand selection left",
@@ -99,7 +81,36 @@ export const commandTypes = {
             keys: ["S-End"],
         },
     },
-    "Key Combos": {
+    Editing: {
+        Backspace: {
+            description: "Delete character before the cursor",
+            keys: ["Backspace"],
+        },
+        Delete: {
+            description: "Delete character after the cursor",
+            keys: ["Delete"],
+        },
+        BackspaceWord: {
+            description: "Delete previous word",
+            keys: ["C-Backspace"],
+        },
+        DeleteWord: {
+            description: "Delete next word",
+            keys: ["C-Delete"],
+        },
+        Enter: {
+            description: "Create a new line",
+            keys: ["Enter"],
+        },
+        // Could not figure out how to make space work
+        // Space: {
+        //     description: "Insert a space",
+        //     keys: [" "],
+        // },
+        Tab: {
+            description: "Press the tab key",
+            keys: ["Tab"],
+        },
         Cut: {
             description: "Cut selection",
             keys: ["C-x"],

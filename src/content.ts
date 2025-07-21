@@ -9,8 +9,9 @@ async function performCommands(commands: CommandName[]): Promise<void> {
         // Press the keys associated with the command
         for (const keyCombo of commandDef.keys ?? []) {
             await pressKey(keyCombo);
-            // Add a tiny bit of delay to ensure that every key gets run
-            // await new Promise((resolve) => setTimeout(resolve, 1));
+            // Add a tiny bit of delay to ensure that every key gets run.
+            // If you disable this, sequences with a lot of keys will skip some.
+            await new Promise((resolve) => setTimeout(resolve, 1));
         }
 
         // Switch the mode associated with the command
@@ -127,7 +128,7 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
             // process of performing a keybind. In this case, block the
             // user's key press.
             preventEvent(event);
-            console.log("Blocked Overlapping Event:", key);
+            console.log("Blocked Overlapping Event:", key, pressingKey);
         }
         return;
     }

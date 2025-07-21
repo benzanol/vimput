@@ -47,7 +47,7 @@ const KEYS = {
 
     Enter: 13,
     Tab: 9,
-    Space: 32,
+    " ": 32,
     Delete: 46,
     Backspace: 8,
 
@@ -57,6 +57,10 @@ const KEYS = {
     x: 88,
     z: 90,
 } as const;
+
+const KEY_CODES: Partial<Record<Key, string>> = {
+    " ": "Space",
+};
 
 type Key = keyof typeof KEYS;
 type SKeyCombo = Key | `S-${Key}`;
@@ -85,9 +89,10 @@ function calculateModifiers(key: KeyCombo): [number, Key] {
 
 async function performKeyEvent(tabId: number, type: EventType, combo: KeyCombo): Promise<void> {
     const [modifiers, key] = calculateModifiers(combo);
-    const code = key; // None of the keys used require a different key code
+    const code = KEY_CODES[key] ?? key; // None of the keys used require a different key code
     const windowsVirtualKeyCode = KEYS[key as Key];
     const event = { type, code, key, windowsVirtualKeyCode, modifiers };
+    console.error(JSON.stringify(event));
 
     return new Promise((resolve) => {
         chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", event, () => {
@@ -98,7 +103,7 @@ async function performKeyEvent(tabId: number, type: EventType, combo: KeyCombo):
 
 // Send a key press down and up
 async function performKeyPress(tabId: number, combo: KeyCombo): Promise<void> {
-    await performKeyEvent(tabId, "rawKeyDown", combo);
+    await performKeyEvent(tabId, "keyDown", combo);
     await performKeyEvent(tabId, "keyUp", combo);
 }
 

@@ -25,8 +25,12 @@ imap C-q Normal
 # Entering insert mode
 nmap i Insert
 nmap a Right Insert
-nmap S-I BackwardWord Insert
-nmap S-A ForwardWord Insert
+nmap S-I LineStart Insert
+nmap S-A LineEnd Insert
+nmap o LineEnd Enter Insert
+nmap S-O LineStart Enter Up Insert
+nmap s Delete Insert
+nmap S-S LineStart VisualLineEnd Backspace Insert
 
 # Navigation
 nmap h Left
@@ -41,20 +45,25 @@ nmap S-$ LineEnd
 
 # Deleting
 nmap x Delete
-nmap S-X DeleteWord
-nmap z Backspace
+nmap S-X Backspace
+nmap z DeleteWord
 nmap S-Z BackspaceWord
 
 # Miscellaneous
 nmap v Visual
+nmap v LineStart VisualLineEnd Visual
 nmap p Paste
 nmap u Undo
 nmap S-U Redo
+nmap S-J LineEnd Delete
 
 # Operators
 nmap d operator Cut
 nmap c operator Cut Insert
 nmap y operator Copy Right
+nmap S-D VisualLineEnd Cut
+nmap S-C VisualLineEnd Cut Insert
+nmap S-Y VisualLineEnd Copy Left
 
 # Exiting visual mode
 xmap q Right Normal
