@@ -1,5 +1,5 @@
 import { commandTypes } from "./utils/commands";
-import { defaultVinputConfig, VinputConfig } from "./utils/config";
+import { defaultVinputConfigText, defaultVinputConfig, VinputConfig } from "./utils/config";
 import { parseConfiguration } from "./utils/parseConfig";
 
 // ==================== Generate the command list ====================
@@ -59,6 +59,11 @@ document.getElementById("save")!.addEventListener("click", async () => {
 });
 
 // ==================== Load config ====================
+
+const defText = defaultVinputConfigText.trim();
+const defConfigElem = document.getElementById("default-config") as HTMLTextAreaElement;
+defConfigElem.value = defText;
+defConfigElem.rows = defText.split("\n").length;
 
 type ExtensionStorage = {
     configText?: string;

@@ -10,7 +10,7 @@ async function performCommands(commands: CommandName[]): Promise<void> {
         for (const keyCombo of commandDef.keys ?? []) {
             await pressKey(keyCombo);
             // Add a tiny bit of delay to ensure that every key gets run
-            await new Promise((resolve) => setTimeout(resolve, 1));
+            // await new Promise((resolve) => setTimeout(resolve, 1));
         }
 
         // Switch the mode associated with the command
@@ -136,7 +136,6 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
     }
 
     const modeBindings = config[state.mode];
-    console.log(key, state.mode, modeBindings);
     const keyBinding = modeBindings[key];
     if (!keyBinding) {
         // Exit motion mode if an invalid motion key was pressed

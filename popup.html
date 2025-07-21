@@ -6,7 +6,7 @@
         <style>
             body {
                 margin: 0;
-                margin-right: 6px;
+                margin-right: 12px;
 
                 width: 700px;
                 height: 500px;
@@ -64,10 +64,17 @@
                 display: inline-block;
             }
 
-            #config {
+            textarea {
                 width: 100%;
+                padding: 0.5em;
+            }
+            #config {
                 height: 20em;
                 resize: vertical;
+            }
+            #default-config {
+                border: 1px solid gray;
+                background-color: rgba(250, 250, 250, 0.2);
             }
 
             .leftright {
@@ -102,6 +109,16 @@
     <body>
         <h1 id="title">vinput</h1>
 
+        <div class="doc-heading">Configuration</div>
+        <textarea spellcheck="false" id="config"></textarea>
+        <div class="leftright">
+            <div>
+                <div id="error"></div>
+                <div id="success"></div>
+            </div>
+            <button id="save">Save</button>
+        </div>
+
         <div id="documentation">
             <div class="doc-heading">Statements</div>
 
@@ -131,15 +148,9 @@
 
             <div class="doc-heading">Commands</div>
             <div id="commands"></div>
-        </div>
 
-        <textarea id="config"></textarea>
-        <div class="leftright">
-            <div>
-                <div id="error"></div>
-                <div id="success"></div>
-            </div>
-            <button id="save">Save</button>
+            <div class="doc-heading">Default Config</div>
+            <textarea spellcheck="false" readonly id="default-config"></textarea>
         </div>
     </body>
     <script src="dist/popup.js" type="module"></script>
