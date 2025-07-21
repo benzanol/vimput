@@ -42,6 +42,8 @@ nmap w ForwardWord
 nmap e ForwardWord
 nmap S-^ LineStart
 nmap S-$ LineEnd
+nmap g Top
+nmap S-G Bottom
 
 # Deleting
 nmap x Delete
@@ -51,7 +53,7 @@ nmap S-Z BackspaceWord
 
 # Miscellaneous
 nmap v Visual
-nmap v LineStart VisualLineEnd Visual
+nmap S-V LineStart VisualLineEnd Visual
 nmap p Paste
 nmap u Undo
 nmap S-U Redo
@@ -84,14 +86,18 @@ oxmap w VisualForwardWord
 oxmap e VisualForwardWord
 oxmap S-^ VisualLineStart
 oxmap S-$ VisualLineEnd
+oxmap g VisualTop
+oxmap S-G VisualBottom
 
 # Operate on the whole line
 omap d LineStart VisualLineEnd
 omap c LineStart VisualLineEnd
 omap y LineStart VisualLineEnd
 
-# Operate on the current word
-omap S-W BackwardWord VisualForwardWord
+# Select the current word
+oxmap S-W BackwardWord VisualForwardWord
+# Select everything
+oxmap S-A Top VisualBottom
 `;
 
 const parsed = parseConfiguration(defaultVinputConfigText);

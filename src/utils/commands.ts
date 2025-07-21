@@ -46,6 +46,14 @@ export const commandTypes = {
             description: "Move cursor to the end of the line",
             keys: ["End"],
         },
+        Top: {
+            description: "Move cursor to the start of the editable area",
+            keys: ["C-Home"],
+        },
+        Bottom: {
+            description: "Move cursor to the start of the editable area",
+            keys: ["C-End"],
+        },
     },
     "Visual Navigation": {
         VisualLeft: {
@@ -79,6 +87,14 @@ export const commandTypes = {
         VisualLineEnd: {
             description: "Expand selection to the end of the line",
             keys: ["S-End"],
+        },
+        VisualTop: {
+            description: "Expand selection to the start of the editable area",
+            keys: ["C-S-Home"],
+        },
+        VisualBottom: {
+            description: "Expand selection to the end of the editable area",
+            keys: ["C-S-End"],
         },
     },
     Editing: {
