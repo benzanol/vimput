@@ -316,3 +316,18 @@ window.addEventListener("keydown", async (event) => {
         await performCommands(lastMode.operator);
     }
 });
+
+// ==================== Updating Mode from Events ====================
+
+// Enable visual mode when selecting in normal mode
+const win = window;
+window.addEventListener("selectionchange", () => {
+    const active = document.activeElement as HTMLInputElement | undefined;
+    const start = active?.selectionStart;
+    const end = active?.selectionEnd;
+    const selecting = start !== undefined && end !== undefined && start !== end;
+
+    if (selecting && mode.type === "normal") {
+        changeMode({ type: "visual" });
+    }
+});
