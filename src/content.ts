@@ -20,7 +20,7 @@ async function performCommands(commands: CommandName[]): Promise<void> {
 
 // ==================== Config ====================
 
-import defaultVinputConfig, { type VinputConfig } from "./utils/config";
+import { defaultVinputConfig, type VinputConfig } from "./utils/config";
 
 let config: VinputConfig = defaultVinputConfig;
 
@@ -56,7 +56,7 @@ changeState({ mode: "insert" });
 
 function changeState(newState: VinputState) {
     if (newState.mode !== state.mode) {
-        chrome.runtime.sendMessage(null, { type: "changeMode", mode: newState });
+        chrome.runtime.sendMessage(null, { type: "changeMode", mode: newState.mode });
     }
 
     state = newState;
@@ -100,6 +100,8 @@ window.addEventListener("keydown", async (event) => {
 });
 
 async function handleKeydown(event: KeyboardEvent): Promise<void> {
+    if (["Control", "Shift", "Alt", "Meta", "CapsLock"].includes(event.key)) return;
+
     let key = event.key;
     if (event.shiftKey) key = "S-" + key;
     if (event.ctrlKey) key = "C-" + key;
@@ -134,10 +136,14 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
     }
 
     const modeBindings = config[state.mode];
+    console.log(key, state.mode, modeBindings);
     const keyBinding = modeBindings[key];
     if (!keyBinding) {
         // Exit motion mode if an invalid motion key was pressed
-        if (state.mode === "motion") changeState({ mode: state.previous });
+        if (state.mode === "motion") {
+            changeState({ mode: state.previous });
+            preventEvent(event);
+        }
         return;
     }
 

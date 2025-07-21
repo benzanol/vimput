@@ -105,12 +105,12 @@
         <div id="documentation">
             <div class="doc-heading">Statements</div>
 
-            <div class="doc-statement">nmap/xmap/omap/imap/map/map! KEY CMD1 CMD2 ...</div>
+            <div class="doc-statement">nmap/xmap/omap/imap/ovmap/map/map! KEY CMD1 CMD2 ...</div>
             <p>Map KEY to execute one or more commands.</p>
             <p>
                 nmap, xmap, omap, and imap bind the key in normal, visual, operator-pending, and
-                insert mode respectively. map binds the key in all but insert mode, and map! binds
-                the key in every mode.
+                insert mode respectively. oxmap binds the key in operator and visual mode, map binds
+                the key in all but insert mode, and map! binds the key in every mode.
             </p>
             <p>
                 KEY must have the form [A-][C-][S-]KEYNAME, where KEYNAME follows the
