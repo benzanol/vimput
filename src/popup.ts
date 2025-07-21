@@ -30,6 +30,8 @@ for (const [type, cmds] of Object.entries(commandTypes)) {
 
 // ==================== Save config ====================
 
+let configText: string | null = null;
+
 function setUserMessage(message: string, error: boolean = false) {
     document.getElementById("success")!.textContent = error ? "" : message;
     document.getElementById("error")!.textContent = error ? message : "";
@@ -52,11 +54,23 @@ document.getElementById("save")!.addEventListener("click", async () => {
             configText: textarea.value,
             config: typeof output === "string" ? undefined : output,
         });
+        configText = textarea.value;
+        updateSaveButton();
         setUserMessage("Your configuration has been saved!");
     } catch (e) {
         setUserMessage(`Error saving config: ${e}`);
     }
 });
+
+// ==================== On input ====================
+
+function updateSaveButton() {
+    const textarea = document.getElementById("config") as HTMLTextAreaElement;
+    const disabled = textarea.value === configText;
+    (document.getElementById("save") as HTMLButtonElement).disabled = disabled;
+}
+
+document.getElementById("config")!.addEventListener("input", updateSaveButton);
 
 // ==================== Load config ====================
 
@@ -73,5 +87,7 @@ type ExtensionStorage = {
 // Get data
 chrome.storage.sync.get<ExtensionStorage>("configText", (result) => {
     const textarea = document.getElementById("config") as HTMLTextAreaElement;
-    textarea.value = result.configText ?? "";
+    configText = result.configText ?? "";
+    textarea.value = configText;
+    updateSaveButton();
 });
