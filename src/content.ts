@@ -119,21 +119,6 @@ async function pressKey(key: KeyCombo): Promise<void> {
     });
 }
 
-// Detect all key presses
-let handlingKeydown = false;
-window.addEventListener("keydown", async (event) => {
-    handlingKeydown = true;
-    try {
-        await handleKeydown(event);
-    } finally {
-        // By waiting before setting to false the keydown, the
-        // selection change listener runs before it is set to false,
-        // meaning that if a command makes the visual selection have
-        // length 0, visual mode will not be immediately disabled
-        setTimeout(() => (handlingKeydown = false), 1);
-    }
-});
-
 async function handleKeydown(event: KeyboardEvent): Promise<void> {
     if (["Control", "Shift", "Alt", "Meta", "CapsLock"].includes(event.key)) return;
 
@@ -213,10 +198,63 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
     }
 }
 
+let handlingKeydown = false;
+async function onKeydown(event: KeyboardEvent): Promise<void> {
+    handlingKeydown = true;
+    try {
+        await handleKeydown(event);
+    } finally {
+        // By waiting before setting to false the keydown, the
+        // selection change listener runs before it is set to false,
+        // meaning that if a command makes the visual selection have
+        // length 0, visual mode will not be immediately disabled
+        setTimeout(() => (handlingKeydown = false), 1);
+    }
+}
+
+// Keep track of the documents that are being watched
+const watchingDocuments = new Set<Document>();
+function watchDocument(doc: Document | undefined) {
+    if (!doc) return;
+    console.log("Watching document:", doc);
+    watchingDocuments.add(doc);
+    doc.addEventListener("keydown", onKeydown, true);
+    doc.addEventListener("selectionchange", onSelectionChange, true);
+}
+
+function watchFrame(frame: HTMLFrameElement | HTMLIFrameElement) {
+    const cb = () => frame.contentDocument && watchDocument(frame.contentDocument);
+    // Add the listener on load or after 3 seconds, whichever happens first
+    frame.addEventListener("load", cb);
+    setTimeout(cb, 3000);
+}
+
+// Watch the root document
+watchDocument(document);
+
+// Add all current frame elements
+document.querySelectorAll("frame").forEach(watchFrame);
+document.querySelectorAll("iframe").forEach(watchFrame);
+
+// Detect new child frames
+const observer = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+        for (const frame of Array.from(m.addedNodes)) {
+            if (frame instanceof HTMLIFrameElement || frame instanceof HTMLFrameElement) {
+                watchFrame(frame);
+            }
+        }
+    }
+});
+observer.observe(document, {
+    childList: true,
+    subtree: true,
+});
+
 // ==================== Updating Mode from Events ====================
 
 // Enable visual mode when selecting in normal mode
-window.addEventListener("selectionchange", () => {
+function onSelectionChange() {
     if (handlingKeydown) return;
 
     if (state.mode === "motion") changeState({ mode: state.previous });
@@ -231,4 +269,4 @@ window.addEventListener("selectionchange", () => {
     } else if (!selecting && state.mode === "visual") {
         changeState({ mode: "normal" });
     }
-});
+}
