@@ -172,7 +172,9 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
     }
     verboseLog(`Processing Key: '${key}'`);
 
-    const repeat = state.repeat ?? 1;
+    let repeat = state.repeat ?? 1;
+    const maxRepeat = +config.settings.MaxRepeat;
+    if (isFinite(maxRepeat) && maxRepeat >= 1 && repeat > maxRepeat) repeat = maxRepeat;
 
     // Check if it is a numeric argument
     if (state.mode !== "insert" && key.match(/^[0123456789]$/)) {
@@ -194,7 +196,7 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
             preventEvent(event);
         } else if (
             config.settings[`${upcaseMode()}BlockInsertions`] === "true" &&
-            event.key.length === 1
+            key.match(/^(S-)?.$/)
         ) {
             preventEvent(event);
         }
@@ -254,8 +256,8 @@ function watchDocument(doc: Document | undefined) {
     if (!doc) return;
     verboseLog("Watching document:", doc);
     watchingDocuments.add(doc);
-    doc.addEventListener("keydown", onKeydown, true);
-    doc.addEventListener("selectionchange", onSelectionChange, true);
+    doc.addEventListener("keydown", onKeydown);
+    doc.addEventListener("selectionchange", onSelectionChange);
 }
 
 function watchFrame(frame: HTMLFrameElement | HTMLIFrameElement) {

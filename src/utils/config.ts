@@ -16,8 +16,11 @@ export type VinputConfig = {
 };
 
 export const defaultVinputConfigText = `
-# Start in insert mode
+# Settings
 set DefaultMode insert
+set MaxRepeat 50
+set NormalBlockInsertions true
+set VisualBlockInsertions true
 
 # Light background caret colors
 set NormalCaretColor #009944
@@ -27,10 +30,6 @@ set VisualCaretColor #bb0066
 set NormalDarkCaretColor #33ffaa
 set MotionDarkCaretColor #ffdd33
 set VisualDarkCaretColor #ff00ff
-
-# Block other keys
-set NormalBlockInsertions true
-set VisualBlockInsertions true
 
 # Entering normal mode
 imap C-q Normal

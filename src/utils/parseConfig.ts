@@ -59,6 +59,11 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
                 if (segs[2] !== "true" && segs[2] !== "false") {
                     return `Line ${i + 1}: ${segs[1]} must be true or false.`;
                 }
+            } else if (segs[1] === "MaxRepeat") {
+                const num = +segs[2];
+                if (!isFinite(num) || num < 1 || num % 1 !== 0) {
+                    return `Line ${i + 1}: Invalid positive integer '${segs[2]}'`;
+                }
             } else {
                 return `Line ${i + 1}: Invalid setting '${segs[1]}'`;
             }
