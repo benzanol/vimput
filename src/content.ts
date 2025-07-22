@@ -37,7 +37,16 @@ type VinputState =
 // Don't show the mode icon until the config is loaded
 let state: VinputState = { mode: "insert" };
 
-let caretColorElem: HTMLElement | null = null;
+let caretColorElems: HTMLElement[] = [];
+
+function allDocuments(): Document[] {
+    const all = [document];
+    document.querySelectorAll("frame, iframe").forEach((frame) => {
+        const doc = (frame as HTMLFrameElement | HTMLIFrameElement).contentDocument;
+        if (doc) all.push(doc);
+    });
+    return all;
+}
 
 function changeState(newState: VinputState, forceRefresh: boolean = false) {
     const modeChanged = newState.mode !== state.mode;
@@ -46,18 +55,21 @@ function changeState(newState: VinputState, forceRefresh: boolean = false) {
         verboseLog("Changed mode:", state.mode);
 
         // Remove the old caret color
-        if (caretColorElem !== null) {
-            caretColorElem.parentElement?.removeChild(caretColorElem);
-            caretColorElem = null;
+        for (const elem of caretColorElems) {
+            elem.parentElement?.removeChild(elem);
         }
+        caretColorElems = [];
 
         // Set the new caret color
         const capitalModeName = state.mode[0].toUpperCase() + state.mode.slice(1);
         const newColor = config.settings[capitalModeName + "CaretColor"];
         if (newColor) {
-            caretColorElem = document.createElement("style");
-            caretColorElem.textContent = `* {caret-color: ${newColor} !important;}`;
-            document.head.appendChild(caretColorElem);
+            const styleText = `* {caret-color: ${newColor} !important;}`;
+            caretColorElems = allDocuments().map((doc) => {
+                const style = doc.head.appendChild(doc.createElement("style"));
+                style.textContent = styleText;
+                return style;
+            });
         }
 
         // Change the mode icon
@@ -216,7 +228,7 @@ async function onKeydown(event: KeyboardEvent): Promise<void> {
 const watchingDocuments = new Set<Document>();
 function watchDocument(doc: Document | undefined) {
     if (!doc) return;
-    console.log("Watching document:", doc);
+    verboseLog("Watching document:", doc);
     watchingDocuments.add(doc);
     doc.addEventListener("keydown", onKeydown, true);
     doc.addEventListener("selectionchange", onSelectionChange, true);
@@ -232,7 +244,7 @@ function watchFrame(frame: HTMLFrameElement | HTMLIFrameElement) {
 // Watch the root document
 watchDocument(document);
 
-// Add all current frame elements
+// Watch all current frame elements
 document.querySelectorAll("frame").forEach(watchFrame);
 document.querySelectorAll("iframe").forEach(watchFrame);
 
