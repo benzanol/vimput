@@ -55,9 +55,9 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
                 if (!isValidColor(segs[2])) {
                     return `Line ${i + 1}: Invalid color '${segs[2]}'`;
                 }
-            } else if (segs[1] === "Verbose") {
+            } else if (segs[1].match(/Verbose|(Normal|Visual)BlockInsertions/)) {
                 if (segs[2] !== "true" && segs[2] !== "false") {
-                    return `Line ${i + 1}: Verbose must be true or false.`;
+                    return `Line ${i + 1}: ${segs[1]} must be true or false.`;
                 }
             } else {
                 return `Line ${i + 1}: Invalid setting '${segs[1]}'`;

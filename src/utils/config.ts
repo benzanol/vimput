@@ -28,6 +28,10 @@ set NormalDarkCaretColor #33ffaa
 set MotionDarkCaretColor #ffdd33
 set VisualDarkCaretColor #ff00ff
 
+# Block other keys
+set NormalBlockInsertions true
+set VisualBlockInsertions true
+
 # Entering normal mode
 imap C-q Normal
 

@@ -51,7 +51,7 @@ type VinputState =
 // Don't show the mode icon until the config is loaded
 let state: VinputState = { mode: "insert" };
 
-let caretColorElems: HTMLElement[] = [];
+const upcaseMode = () => state.mode[0].toUpperCase() + state.mode.slice(1);
 
 function allDocuments(): Document[] {
     const all = [document];
@@ -79,6 +79,7 @@ function isBgDark(): boolean {
     return luminance < 128;
 }
 
+let caretColorElems: HTMLElement[] = [];
 function changeState(newState: VinputState, forceRefresh: boolean = false) {
     const modeChanged = newState.mode !== state.mode;
     state = newState;
@@ -92,9 +93,8 @@ function changeState(newState: VinputState, forceRefresh: boolean = false) {
         caretColorElems = [];
 
         // Set the new caret color
-        const capitalModeName = state.mode[0].toUpperCase() + state.mode.slice(1);
-        let newColor = config.settings[capitalModeName + "CaretColor"];
-        if (isBgDark()) newColor = config.settings[capitalModeName + "DarkCaretColor"] ?? newColor;
+        let newColor = config.settings[upcaseMode() + "CaretColor"];
+        if (isBgDark()) newColor = config.settings[upcaseMode() + "DarkCaretColor"] ?? newColor;
 
         if (newColor) {
             caretColorElems = allDocuments().map((doc) => {
@@ -191,6 +191,11 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
         // Exit motion mode if an invalid motion key was pressed
         if (state.mode === "motion") {
             changeState({ mode: state.previous });
+            preventEvent(event);
+        } else if (
+            config.settings[`${upcaseMode()}BlockInsertions`] === "true" &&
+            event.key.length === 1
+        ) {
             preventEvent(event);
         }
         return;
