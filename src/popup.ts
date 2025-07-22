@@ -29,16 +29,19 @@ for (const [type, cmds] of Object.entries(commandTypes)) {
     commandsElem.appendChild(typeDiv);
 
     for (const [name, def] of Object.entries(cmds)) {
-        const nameSpan = document.createElement("span");
+        const cmdDiv = commandsElem.appendChild(document.createElement("div"));
+        if (def.description) cmdDiv.title = def.description;
+
+        // Add the name
+        const nameSpan = cmdDiv.appendChild(document.createElement("span"));
         nameSpan.textContent = name;
 
-        const keySpan = document.createElement("span");
-        keySpan.classList.add("command-key");
-        keySpan.textContent = "(" + (def.keys ?? def.mode) + ")";
-
-        const cmdDiv = document.createElement("div");
-        cmdDiv.append(nameSpan, keySpan);
-        commandsElem.appendChild(cmdDiv);
+        // Add the key or mode
+        if (def.keys || def.mode) {
+            const keySpan = cmdDiv.appendChild(document.createElement("span"));
+            keySpan.classList.add("command-key");
+            keySpan.textContent = "(" + (def.keys ?? def.mode) + ")";
+        }
     }
 }
 
