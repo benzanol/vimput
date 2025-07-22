@@ -176,7 +176,7 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
 
     // Check if it is a numeric argument
     if (state.mode !== "insert" && key.match(/^[0123456789]$/)) {
-        verboseLog(`Numeric Arg: '${key}'`);
+        verboseLog(`Numeric Key: '${key}'`);
 
         const newRepeat = +((state.repeat ?? "") + key);
         changeState({ ...state, repeat: newRepeat });
@@ -190,7 +190,7 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
     const modeBindings = config[state.mode];
     const keyBinding = modeBindings[key];
     if (!keyBinding) {
-        verboseLog(`Unbound key: '${key}'`);
+        verboseLog(`Unbound Key: '${key}'`);
 
         // Exit motion mode if an invalid motion key was pressed
         if (state.mode === "motion") {
@@ -202,9 +202,11 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
         ) {
             preventEvent(event);
         }
+        // Check for selection change after the key event has been performed
+        setTimeout(() => onSelectionChange(true), 0);
         return;
     }
-    verboseLog(`Executing key: '${key}'`);
+    verboseLog(`Executing Key: '${key}'`);
 
     // Prevent whatever the key would have originally done
     preventEvent(event);
@@ -247,7 +249,7 @@ async function onKeydown(event: KeyboardEvent): Promise<void> {
         // selection change listener runs before it is set to false,
         // meaning that if a command makes the visual selection have
         // length 0, visual mode will not be immediately disabled
-        setTimeout(() => (handlingKeydown = false), 1);
+        setTimeout(() => (handlingKeydown = false), 5);
     }
 }
 
@@ -262,8 +264,8 @@ function watchDocument(doc: Document | undefined) {
 
     doc.addEventListener("keydown", onKeydown);
 
-    doc.addEventListener("selectionchange", onSelectionChange);
-    doc.addEventListener("pointerdown", onSelectionChange);
+    doc.addEventListener("selectionchange", () => onSelectionChange());
+    doc.addEventListener("pointerdown", () => onSelectionChange());
 
     // Third argument=true means watch every node in the dom for focus changes
     doc.addEventListener("focus", onFocusChange, true);
@@ -312,9 +314,8 @@ function onFocusChange() {
 }
 
 // Enable visual mode when selecting in normal mode
-function onSelectionChange() {
-    if (handlingKeydown) return;
-    verboseLog("Selection changed");
+function onSelectionChange(force: boolean = false) {
+    if (handlingKeydown && !force) return;
 
     if (state.mode === "motion") {
         changeState({ mode: state.previous });
