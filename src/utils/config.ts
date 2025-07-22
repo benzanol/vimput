@@ -80,8 +80,9 @@ nmap D SelectLineEnd Cut
 nmap C SelectLineEnd Cut Insert
 nmap Y SelectLineEnd Copy Left
 
-# Exiting visual mode
-xmap q Right Normal
+# Visual mode
+xmap q ExitSelection Normal
+xmap o SwapSelectionDirection Normal
 xmap i Left Insert
 xmap a Right Insert
 

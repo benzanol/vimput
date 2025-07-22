@@ -7,11 +7,14 @@ import { CommandName, flattenedCommands } from "./utils/commands";
 // it.
 let pressingKey: KeyCombo | undefined = undefined;
 async function pressKey(key: KeyCombo): Promise<void> {
+    verboseLog(`Sending key: '${key}'`);
     return new Promise((resolve) => {
         pressingKey = key;
         chrome.runtime.sendMessage(null, { type: "pressKey", key }, () => {
             pressingKey = undefined;
-            resolve();
+            // Add a tiny bit of delay to ensure that every key gets run.
+            // If you disable this, sequences with a lot of keys will skip some.
+            setTimeout(resolve, 1);
         });
     });
 }
@@ -22,15 +25,26 @@ async function performCommands(commands: CommandName[]): Promise<void> {
 
         // Press the keys associated with the command
         for (const keyCombo of commandDef.keys ?? []) {
-            verboseLog(`Sending key: '${keyCombo}'`);
             await pressKey(keyCombo);
-            // Add a tiny bit of delay to ensure that every key gets run.
-            // If you disable this, sequences with a lot of keys will skip some.
-            await new Promise((resolve) => setTimeout(resolve, 1));
         }
 
         // Switch the mode associated with the command
         if (commandDef.mode) changeState({ mode: commandDef.mode });
+
+        // Perform custom commands
+        if (command === "ExitSelection") {
+            const direction = activeDocument(document).getSelection()?.direction;
+            if (direction === "forward") {
+                await pressKey("ArrowRight");
+            } else if (direction === "backward") {
+                await pressKey("ArrowLeft");
+            }
+        } else if (command === "SwapSelectionDirection") {
+            const activeDoc = activeDocument(document);
+            const sel = activeDoc.getSelection();
+            if (!sel || !sel.anchorNode || !sel.focusNode) return;
+            sel.setBaseAndExtent(sel.focusNode, sel.focusOffset, sel.anchorNode, sel.anchorOffset);
+        }
     }
 }
 
@@ -62,20 +76,23 @@ function allDocuments(): Document[] {
     return all;
 }
 
+function activeDocument(doc: Document): Document {
+    const a = doc.activeElement;
+    return (a instanceof HTMLFrameElement || a instanceof HTMLIFrameElement) && a.contentDocument
+        ? activeDocument(a.contentDocument)
+        : doc;
+}
+
 function isBgDark(): boolean {
-    function activeElem(doc: Document): Element | null {
-        const a = doc.activeElement;
-        return a instanceof HTMLFrameElement || a instanceof HTMLIFrameElement
-            ? a.contentDocument && activeElem(a.contentDocument)
-            : a;
-    }
+    const doc = activeDocument(document);
+    const focusNode = doc.getSelection()?.focusNode;
+    let activeElem = focusNode instanceof Element ? focusNode : doc.activeElement ?? doc.body;
 
-    const active = activeElem(document);
-    if (!active) return false;
-
-    const bg = getComputedStyle(active).backgroundColor;
+    const bg = getComputedStyle(activeElem).backgroundColor;
     const [r, g, b] = bg.match(/\d+/g)?.map(Number) || [255, 255, 255];
     const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    verboseLog(activeElem, luminance);
+
     return luminance < 128;
 }
 
@@ -331,7 +348,7 @@ function onSelectionChange(force: boolean = false) {
         verboseLog("Switched to visual mode because of selection");
         changeState({ mode: "visual" });
     } else if (!selecting && state.mode === "visual") {
-        verboseLog("Exited to visual mode because of no selection");
+        verboseLog("Exited visual mode because of no selection");
         changeState({ mode: "normal" });
     }
 }

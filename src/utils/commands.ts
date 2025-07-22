@@ -148,6 +148,14 @@ export const commandTypes = {
             keys: ["C-S-z"],
         },
     },
+    "Custom Commands": {
+        ExitSelection: {
+            description: "Exit the selection, putting the cursor on the correct side",
+        },
+        SwapSelectionDirection: {
+            description: "Move the caret to the opposite side of the selection",
+        },
+    },
 } as const;
 
 export type CommandType = keyof typeof commandTypes;
