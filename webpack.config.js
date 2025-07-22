@@ -23,4 +23,6 @@ module.exports = {
             },
         ],
     },
+    // Don't use eval, as certain contexts block using eval
+    devtool: false,
 };
