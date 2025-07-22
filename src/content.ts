@@ -114,6 +114,11 @@ import { defaultVinputConfig, type VinputConfig } from "./utils/config";
 
 let config: VinputConfig = defaultVinputConfig;
 
+function defaultMode(): "insert" | "normal" | "visual" {
+    const m = config.settings.DefaultMode;
+    return m === "insert" || m === "normal" || m === "visual" ? m : "normal";
+}
+
 function verboseLog(...data: any[]) {
     if (config.settings.Verbose === "true") {
         console.log("vinput:", ...data);
@@ -125,12 +130,7 @@ chrome.storage.sync.get("config", (result) => {
     config = result.config ?? defaultVinputConfig;
 
     // Set the default mode
-    const m = config.settings.DefaultMode;
-    if (m === "insert" || m === "normal" || m === "visual") {
-        state = { mode: m };
-    }
-    // Force update
-    changeState(state, true);
+    changeState({ mode: defaultMode() }, true);
 });
 
 // Listen for when the stored config changes
@@ -170,14 +170,14 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
         }
         return;
     }
-    verboseLog(`Processing Key: '${key}'`);
-
     let repeat = state.repeat ?? 1;
     const maxRepeat = +config.settings.MaxRepeat;
     if (isFinite(maxRepeat) && maxRepeat >= 1 && repeat > maxRepeat) repeat = maxRepeat;
 
     // Check if it is a numeric argument
     if (state.mode !== "insert" && key.match(/^[0123456789]$/)) {
+        verboseLog(`Numeric Arg: '${key}'`);
+
         const newRepeat = +((state.repeat ?? "") + key);
         changeState({ ...state, repeat: newRepeat });
         preventEvent(event);
@@ -190,6 +190,8 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
     const modeBindings = config[state.mode];
     const keyBinding = modeBindings[key];
     if (!keyBinding) {
+        verboseLog(`Unbound key: '${key}'`);
+
         // Exit motion mode if an invalid motion key was pressed
         if (state.mode === "motion") {
             changeState({ mode: state.previous });
@@ -202,6 +204,7 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
         }
         return;
     }
+    verboseLog(`Executing key: '${key}'`);
 
     // Prevent whatever the key would have originally done
     preventEvent(event);
@@ -256,8 +259,15 @@ function watchDocument(doc: Document | undefined) {
     if (!doc) return;
     verboseLog("Watching document:", doc);
     watchingDocuments.add(doc);
+
     doc.addEventListener("keydown", onKeydown);
+
     doc.addEventListener("selectionchange", onSelectionChange);
+    doc.addEventListener("pointerdown", onSelectionChange);
+
+    // Third argument=true means watch every node in the dom for focus changes
+    doc.addEventListener("focus", onFocusChange, true);
+    doc.addEventListener("blur", onFocusChange, true);
 }
 
 function watchFrame(frame: HTMLFrameElement | HTMLIFrameElement) {
@@ -291,11 +301,25 @@ observer.observe(document, {
 
 // ==================== Updating Mode from Events ====================
 
+function onFocusChange() {
+    if (handlingKeydown) return;
+    verboseLog("Focus changed");
+
+    if (config.settings.DefaultModeOnFocus === "true") {
+        const mode = defaultMode();
+        if (state.mode !== mode) changeState({ mode });
+    }
+}
+
 // Enable visual mode when selecting in normal mode
 function onSelectionChange() {
     if (handlingKeydown) return;
+    verboseLog("Selection changed");
 
-    if (state.mode === "motion") changeState({ mode: state.previous });
+    if (state.mode === "motion") {
+        changeState({ mode: state.previous });
+        return;
+    }
 
     const active = document.activeElement as HTMLInputElement | undefined;
     const start = active?.selectionStart;
@@ -303,8 +327,10 @@ function onSelectionChange() {
     const selecting = start !== undefined && end !== undefined && start !== end;
 
     if (selecting && state.mode === "normal") {
+        verboseLog("Switched to visual mode because of selection");
         changeState({ mode: "visual" });
     } else if (!selecting && state.mode === "visual") {
+        verboseLog("Exited to visual mode because of no selection");
         changeState({ mode: "normal" });
     }
 }

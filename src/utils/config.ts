@@ -18,6 +18,7 @@ export type VinputConfig = {
 export const defaultVinputConfigText = `
 # Settings
 set DefaultMode insert
+set DefaultModeOnFocus true
 set MaxRepeat 50
 set NormalBlockInsertions true
 set VisualBlockInsertions true
