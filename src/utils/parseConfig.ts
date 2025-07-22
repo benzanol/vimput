@@ -51,7 +51,7 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
                 if (!["insert", "normal", "visual"].includes(segs[2])) {
                     return `Line ${i + 1}: Default mode must be insert, normal, or visual.`;
                 }
-            } else if (segs[1].match(/^(Normal|Visual|Insert|Motion)CaretColor$/)) {
+            } else if (segs[1].match(/^(Normal|Visual|Insert|Motion)(Dark)?CaretColor$/)) {
                 if (!isValidColor(segs[2])) {
                     return `Line ${i + 1}: Invalid color '${segs[2]}'`;
                 }

@@ -2,6 +2,20 @@
 
 import { CommandName, flattenedCommands } from "./utils/commands";
 
+// Send to the backend to perform key press actions. Store globally
+// that the key is being pressed so that the event listener can ignore
+// it.
+let pressingKey: KeyCombo | undefined = undefined;
+async function pressKey(key: KeyCombo): Promise<void> {
+    return new Promise((resolve) => {
+        pressingKey = key;
+        chrome.runtime.sendMessage(null, { type: "pressKey", key }, () => {
+            pressingKey = undefined;
+            resolve();
+        });
+    });
+}
+
 async function performCommands(commands: CommandName[]): Promise<void> {
     for (const command of commands) {
         const commandDef = flattenedCommands[command];
@@ -48,6 +62,23 @@ function allDocuments(): Document[] {
     return all;
 }
 
+function isBgDark(): boolean {
+    function activeElem(doc: Document): Element | null {
+        const a = doc.activeElement;
+        return a instanceof HTMLFrameElement || a instanceof HTMLIFrameElement
+            ? a.contentDocument && activeElem(a.contentDocument)
+            : a;
+    }
+
+    const active = activeElem(document);
+    if (!active) return false;
+
+    const bg = getComputedStyle(active).backgroundColor;
+    const [r, g, b] = bg.match(/\d+/g)?.map(Number) || [255, 255, 255];
+    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return luminance < 128;
+}
+
 function changeState(newState: VinputState, forceRefresh: boolean = false) {
     const modeChanged = newState.mode !== state.mode;
     state = newState;
@@ -56,19 +87,19 @@ function changeState(newState: VinputState, forceRefresh: boolean = false) {
 
         // Remove the old caret color
         for (const elem of caretColorElems) {
-            elem.parentElement?.removeChild(elem);
+            elem.style.caretColor = "unset";
         }
         caretColorElems = [];
 
         // Set the new caret color
         const capitalModeName = state.mode[0].toUpperCase() + state.mode.slice(1);
-        const newColor = config.settings[capitalModeName + "CaretColor"];
+        let newColor = config.settings[capitalModeName + "CaretColor"];
+        if (isBgDark()) newColor = config.settings[capitalModeName + "DarkCaretColor"] ?? newColor;
+
         if (newColor) {
-            const styleText = `* {caret-color: ${newColor} !important;}`;
             caretColorElems = allDocuments().map((doc) => {
-                const style = doc.head.appendChild(doc.createElement("style"));
-                style.textContent = styleText;
-                return style;
+                doc.body.style.caretColor = newColor;
+                return doc.body;
             });
         }
 
@@ -115,20 +146,6 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 function preventEvent(e: KeyboardEvent): void {
     e.preventDefault();
     e.stopPropagation();
-}
-
-// Send to the backend to perform key press actions. Store globally
-// that the key is being pressed so that the event listener can ignore
-// it.
-let pressingKey: KeyCombo | undefined = undefined;
-async function pressKey(key: KeyCombo): Promise<void> {
-    return new Promise((resolve) => {
-        pressingKey = key;
-        chrome.runtime.sendMessage(null, { type: "pressKey", key }, () => {
-            pressingKey = undefined;
-            resolve();
-        });
-    });
 }
 
 async function handleKeydown(event: KeyboardEvent): Promise<void> {
@@ -223,6 +240,8 @@ async function onKeydown(event: KeyboardEvent): Promise<void> {
         setTimeout(() => (handlingKeydown = false), 1);
     }
 }
+
+// ==================== Listening to Key Presses ====================
 
 // Keep track of the documents that are being watched
 const watchingDocuments = new Set<Document>();
