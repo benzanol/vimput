@@ -8,6 +8,7 @@ async function performCommands(commands: CommandName[]): Promise<void> {
 
         // Press the keys associated with the command
         for (const keyCombo of commandDef.keys ?? []) {
+            verboseLog(`Sending key: '${keyCombo}'`);
             await pressKey(keyCombo);
             // Add a tiny bit of delay to ensure that every key gets run.
             // If you disable this, sequences with a lot of keys will skip some.
@@ -42,6 +43,8 @@ function changeState(newState: VinputState, forceRefresh: boolean = false) {
     const modeChanged = newState.mode !== state.mode;
     state = newState;
     if (modeChanged || forceRefresh) {
+        verboseLog("Changed mode:", state.mode);
+
         // Remove the old caret color
         if (caretColorElem !== null) {
             caretColorElem.parentElement?.removeChild(caretColorElem);
@@ -67,6 +70,12 @@ function changeState(newState: VinputState, forceRefresh: boolean = false) {
 import { defaultVinputConfig, type VinputConfig } from "./utils/config";
 
 let config: VinputConfig = defaultVinputConfig;
+
+function verboseLog(...data: any[]) {
+    if (config.settings.Verbose === "true") {
+        console.log("vinput:", ...data);
+    }
+}
 
 // Get the stored config
 chrome.storage.sync.get("config", (result) => {
@@ -137,16 +146,17 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
         if (pressingKey === key) {
             // This is an event triggered by the extension simulating a
             // key (well probably, it technically could be a coincidence)
-            // console.log("Extension Pressed:", key);
+            verboseLog(`Extension Pressed: '${key}'`);
         } else {
             // The user pressed a key while the extension was in the
             // process of performing a keybind. In this case, block the
             // user's key press.
             preventEvent(event);
-            // console.log("Blocked Overlapping Event:", key, pressingKey);
+            verboseLog(`Blocked Overlapping Event: '${key}' (${pressingKey})`);
         }
         return;
     }
+    verboseLog(`Processing Key: '${key}'`);
 
     const repeat = state.repeat ?? 1;
 

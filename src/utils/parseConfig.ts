@@ -52,7 +52,13 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
                     return `Line ${i + 1}: Default mode must be insert, normal, or visual.`;
                 }
             } else if (segs[1].match(/^(Normal|Visual|Insert|Motion)CaretColor$/)) {
-                if (!isValidColor(segs[2])) return `Line ${i + 1}: Invalid color '${segs[2]}'`;
+                if (!isValidColor(segs[2])) {
+                    return `Line ${i + 1}: Invalid color '${segs[2]}'`;
+                }
+            } else if (segs[1] === "Verbose") {
+                if (segs[2] !== "true" && segs[2] !== "false") {
+                    return `Line ${i + 1}: Verbose must be true or false.`;
+                }
             } else {
                 return `Line ${i + 1}: Invalid setting '${segs[1]}'`;
             }
