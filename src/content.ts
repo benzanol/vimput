@@ -5,11 +5,11 @@ import { CommandName, flattenedCommands } from "./utils/commands";
 // Send to the backend to perform key press actions. Store globally
 // that the key is being pressed so that the event listener can ignore
 // it.
-let pressingKey: KeyCombo | undefined = undefined;
+let pressingKey: [KeyCombo, Date] | undefined = undefined;
 async function pressKey(key: KeyCombo): Promise<void> {
     verboseLog(`Sending key: '${key}'`);
     return new Promise((resolve) => {
-        pressingKey = key;
+        pressingKey = [key, new Date()];
         chrome.runtime.sendMessage(null, { type: "pressKey", key }, () => {
             pressingKey = undefined;
             // Add a tiny bit of delay to ensure that every key gets run.
@@ -189,8 +189,13 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
     if (event.ctrlKey) key = "C-" + key;
     if (event.altKey) key = "A-" + key;
 
+    // If pressing the key took longer than a second, it probably failed.
+    if (pressingKey && new Date().getTime() - pressingKey[1].getTime() >= 1000) {
+        pressingKey = undefined;
+    }
+
     if (pressingKey) {
-        if (pressingKey === key) {
+        if (pressingKey[0] === key) {
             // This is an event triggered by the extension simulating a
             // key (well probably, it technically could be a coincidence)
             verboseLog(`Extension Pressed: '${key}'`);
