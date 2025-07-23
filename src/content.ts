@@ -91,7 +91,6 @@ function isBgDark(): boolean {
     const bg = getComputedStyle(activeElem).backgroundColor;
     const [r, g, b] = bg.match(/\d+/g)?.map(Number) || [255, 255, 255];
     const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    verboseLog(activeElem, luminance);
 
     return luminance < 128;
 }
@@ -131,11 +130,6 @@ import { defaultVinputConfig, type VinputConfig } from "./utils/config";
 
 let config: VinputConfig = defaultVinputConfig;
 
-function defaultMode(): "insert" | "normal" | "visual" {
-    const m = config.settings.DefaultMode;
-    return m === "insert" || m === "normal" || m === "visual" ? m : "normal";
-}
-
 function verboseLog(...data: any[]) {
     if (config.settings.Verbose === "true") {
         console.log("vinput:", ...data);
@@ -147,7 +141,9 @@ chrome.storage.sync.get("config", (result) => {
     config = result.config ?? defaultVinputConfig;
 
     // Set the default mode
-    changeState({ mode: defaultMode() }, true);
+    const m = config.settings.InitialMode;
+    const mode = m === "insert" || m === "normal" || m === "visual" ? m : "insert";
+    changeState({ mode }, true);
 });
 
 // Listen for when the stored config changes
@@ -322,11 +318,22 @@ observer.observe(document, {
 
 function onFocusChange() {
     if (handlingKeydown) return;
-    verboseLog("Focus changed");
+    const onFocus = config.settings.OnFocus;
+    verboseLog("Focus changed", onFocus);
 
-    if (config.settings.DefaultModeOnFocus === "true") {
-        const mode = defaultMode();
-        if (state.mode !== mode) changeState({ mode });
+    if (onFocus === "auto") {
+        const activeDoc = activeDocument(document);
+        const el = activeDoc.activeElement;
+        const isEditable =
+            (el instanceof HTMLTextAreaElement && !el.readOnly && !el.disabled) ||
+            (el instanceof HTMLInputElement && !el.readOnly && !el.disabled) ||
+            (el instanceof HTMLElement && el.contentEditable === "true") ||
+            el?.parentElement?.contentEditable === "true";
+        verboseLog(isEditable);
+
+        changeState({ mode: isEditable ? "insert" : "normal" });
+    } else if (onFocus === "insert" || onFocus === "normal" || onFocus === "visual") {
+        changeState({ mode: onFocus });
     }
 }
 

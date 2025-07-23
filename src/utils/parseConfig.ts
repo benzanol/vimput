@@ -47,15 +47,20 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
             if (segs.length < 3) return `Line ${i + 1}: Not enough arguments for set`;
             if (segs.length > 3) return `Line ${i + 1}: Too many arguments for set`;
 
-            if (segs[1] === "DefaultMode") {
+            if (segs[1] === "InitialMode") {
                 if (!["insert", "normal", "visual"].includes(segs[2])) {
-                    return `Line ${i + 1}: Default mode must be insert, normal, or visual.`;
+                    return `Line ${i + 1}: Initial mode must be insert, normal, or visual.`;
+                }
+            } else if (segs[1].match("OnFocus")) {
+                const options = ["auto", "nothing", "insert", "normal", "visual"];
+                if (!options.includes(segs[2])) {
+                    return `Line ${i + 1}: ${segs[1]} must be one of ${options}`;
                 }
             } else if (segs[1].match(/^(Normal|Visual|Insert|Motion)(Dark)?CaretColor$/)) {
                 if (!isValidColor(segs[2])) {
                     return `Line ${i + 1}: Invalid color '${segs[2]}'`;
                 }
-            } else if (segs[1].match(/Verbose|DefaultModeOnFocus|(Normal|Visual)BlockInsertions/)) {
+            } else if (segs[1].match(/Verbose|(Normal|Visual)BlockInsertions/)) {
                 if (segs[2] !== "true" && segs[2] !== "false") {
                     return `Line ${i + 1}: ${segs[1]} must be true or false.`;
                 }
