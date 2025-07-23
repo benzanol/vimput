@@ -70,7 +70,7 @@ const upcaseMode = () => state.mode[0].toUpperCase() + state.mode.slice(1);
 function allDocuments(): Document[] {
     const all = [document];
     document.querySelectorAll("frame, iframe").forEach((frame) => {
-        const doc = (frame as HTMLFrameElement | HTMLIFrameElement).contentDocument;
+        const doc = (frame as HTMLIFrameElement).contentDocument;
         if (doc) all.push(doc);
     });
     return all;
@@ -78,15 +78,28 @@ function allDocuments(): Document[] {
 
 function activeDocument(doc: Document): Document {
     const a = doc.activeElement;
-    return (a instanceof HTMLFrameElement || a instanceof HTMLIFrameElement) && a.contentDocument
-        ? activeDocument(a.contentDocument)
-        : doc;
+    if (["FRAME", "IFRAME"].includes(a?.tagName!)) {
+        const subDoc = (a as HTMLIFrameElement).contentDocument;
+        if (subDoc) return activeDocument(subDoc);
+    }
+    return doc;
+}
+
+// Frame-agnostic way to get the nearest parent element of node
+function nearestElement(node: Node | null | undefined): Element | null {
+    if (node && typeof node === "object" && node.constructor.name === "Element") {
+        return node as Element;
+    } else if (node) {
+        return node.parentElement;
+    } else {
+        return null;
+    }
 }
 
 function isBgDark(): boolean {
     const doc = activeDocument(document);
     const focusNode = doc.getSelection()?.focusNode;
-    let activeElem = focusNode instanceof Element ? focusNode : doc.activeElement ?? doc.body;
+    const activeElem = nearestElement(focusNode) ?? doc.activeElement ?? doc.body;
 
     const bg = getComputedStyle(activeElem).backgroundColor;
     const [r, g, b] = bg.match(/\d+/g)?.map(Number) || [255, 255, 255];
@@ -293,7 +306,7 @@ function watchDocument(doc: Document | undefined) {
     doc.addEventListener("blur", onFocusChange, true);
 }
 
-function watchFrame(frame: HTMLFrameElement | HTMLIFrameElement) {
+function watchFrame(frame: HTMLIFrameElement) {
     const cb = () => frame.contentDocument && watchDocument(frame.contentDocument);
     // Add the listener on load or after 3 seconds, whichever happens first
     frame.addEventListener("load", cb);
@@ -304,15 +317,14 @@ function watchFrame(frame: HTMLFrameElement | HTMLIFrameElement) {
 watchDocument(document);
 
 // Watch all current frame elements
-document.querySelectorAll("frame").forEach(watchFrame);
-document.querySelectorAll("iframe").forEach(watchFrame);
+document.querySelectorAll("frame, iframe").forEach((el) => watchFrame(el as HTMLIFrameElement));
 
 // Detect new child frames
 const observer = new MutationObserver((mutations) => {
     for (const m of mutations) {
         for (const frame of Array.from(m.addedNodes)) {
-            if (frame instanceof HTMLIFrameElement || frame instanceof HTMLFrameElement) {
-                watchFrame(frame);
+            if ("tagName" in frame && ["FRAME", "IFRAME"].includes(frame.tagName as string)) {
+                watchFrame(frame as HTMLIFrameElement);
             }
         }
     }
@@ -332,6 +344,7 @@ function onFocusChange() {
     if (onFocus === "auto") {
         const activeDoc = activeDocument(document);
         const el = activeDoc.activeElement;
+        // Use tag-names (not instanceof) to make this frame-agnostic
         const isEditable =
             ["TEXTAREA", "INPUT"].includes(el?.tagName!) ||
             (el && "contentEditable" in el && el.contentEditable === "true") ||
