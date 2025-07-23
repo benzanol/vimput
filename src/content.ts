@@ -33,15 +33,14 @@ async function performCommands(commands: CommandName[]): Promise<void> {
 
         // Perform custom commands
         if (command === "ExitSelection") {
-            const direction = activeDocument(document).getSelection()?.direction;
+            const direction = activeWindow(window).getSelection()?.direction;
             if (direction === "forward") {
                 await pressKey("ArrowRight");
             } else if (direction === "backward") {
                 await pressKey("ArrowLeft");
             }
         } else if (command === "SwapSelectionDirection") {
-            const activeDoc = activeDocument(document);
-            const sel = activeDoc.getSelection();
+            const sel = activeWindow(window).getSelection();
             if (!sel || !sel.anchorNode || !sel.focusNode) return;
             sel.setBaseAndExtent(sel.focusNode, sel.focusOffset, sel.anchorNode, sel.anchorOffset);
         }
@@ -76,13 +75,13 @@ function allDocuments(): Document[] {
     return all;
 }
 
-function activeDocument(doc: Document): Document {
-    const a = doc.activeElement;
+function activeWindow(win: Window): Window {
+    const a = win.document.activeElement;
     if (["FRAME", "IFRAME"].includes(a?.tagName!)) {
-        const subDoc = (a as HTMLIFrameElement).contentDocument;
-        if (subDoc) return activeDocument(subDoc);
+        const subWin = (a as HTMLIFrameElement).contentWindow;
+        if (subWin) return activeWindow(subWin);
     }
-    return doc;
+    return win;
 }
 
 // Frame-agnostic way to get the nearest parent element of node
@@ -97,7 +96,7 @@ function nearestElement(node: Node | null | undefined): Element | null {
 }
 
 function isBgDark(): boolean {
-    const doc = activeDocument(document);
+    const doc = activeWindow(window).document;
     const focusNode = doc.getSelection()?.focusNode;
     const activeElem = nearestElement(focusNode) ?? doc.activeElement ?? doc.body;
 
@@ -237,7 +236,10 @@ async function handleKeydown(event: KeyboardEvent): Promise<void> {
             preventEvent(event);
         }
         // Check for selection change after the key event has been performed
-        setTimeout(() => onSelectionChange(true), 0);
+        setTimeout(() => {
+            handlingKeydown = false;
+            onSelectionChange();
+        }, 0);
         return;
     }
     verboseLog(`Executing Key: '${key}'`);
@@ -289,28 +291,28 @@ async function onKeydown(event: KeyboardEvent): Promise<void> {
 
 // ==================== Listening to Key Presses ====================
 
-// Keep track of the documents that are being watched
-const watchingDocuments = new Set<Document>();
-function watchDocument(doc: Document | undefined) {
-    if (!doc) return;
-    verboseLog("Watching document:", doc);
-    watchingDocuments.add(doc);
-
+function watchDocument(doc: Document) {
+    doc.removeEventListener("keydown", onKeydown);
     doc.addEventListener("keydown", onKeydown);
 
-    doc.addEventListener("selectionchange", () => onSelectionChange());
-    doc.addEventListener("pointerdown", () => onSelectionChange());
+    doc.removeEventListener("selectionchange", onSelectionChange);
+    doc.addEventListener("selectionchange", onSelectionChange);
+    doc.removeEventListener("pointerdown", onSelectionChange);
+    doc.addEventListener("pointerdown", onSelectionChange);
 
     // Third argument=true means watch every node in the dom for focus changes
+    doc.removeEventListener("focus", onFocusChange);
     doc.addEventListener("focus", onFocusChange, true);
+    doc.removeEventListener("blur", onFocusChange);
     doc.addEventListener("blur", onFocusChange, true);
 }
 
 function watchFrame(frame: HTMLIFrameElement) {
     const cb = () => frame.contentDocument && watchDocument(frame.contentDocument);
-    // Add the listener on load or after 3 seconds, whichever happens first
+    // Add the listener on load or after a short pause, whichever happens first
+    setTimeout(cb, 0);
+    setTimeout(cb, 1000);
     frame.addEventListener("load", cb);
-    setTimeout(cb, 3000);
 }
 
 // Watch the root document
@@ -342,7 +344,7 @@ function onFocusChange() {
     verboseLog("Focus changed", onFocus);
 
     if (onFocus === "auto") {
-        const activeDoc = activeDocument(document);
+        const activeDoc = activeWindow(window).document;
         const el = activeDoc.activeElement;
         // Use tag-names (not instanceof) to make this frame-agnostic
         const isEditable =
@@ -350,15 +352,16 @@ function onFocusChange() {
             (el && "contentEditable" in el && el.contentEditable === "true") ||
             el?.parentElement?.contentEditable === "true";
 
-        changeState({ mode: isEditable ? "insert" : "normal" });
+        // Update after the focus has changed, so that the background color is detected correctly
+        setTimeout(() => changeState({ mode: isEditable ? "insert" : "normal" }, true), 0);
     } else if (onFocus === "insert" || onFocus === "normal" || onFocus === "visual") {
-        changeState({ mode: onFocus });
+        setTimeout(() => changeState({ mode: onFocus }, true), 0);
     }
 }
 
 // Enable visual mode when selecting in normal mode
-function onSelectionChange(force: boolean = false) {
-    if (handlingKeydown && !force) return;
+function onSelectionChange() {
+    if (handlingKeydown) return;
 
     if (state.mode === "motion") {
         changeState({ mode: state.previous });
