@@ -26,6 +26,7 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
         visual: { ...def?.visual },
         motion: { ...def?.motion },
         settings: { ...def?.settings },
+        siteSettings: [],
     };
 
     const lines = text.split("\n");
@@ -35,6 +36,8 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
 
         // Check if this is a unmapAll statement
         if (segs[0] === "unmapAll") {
+            if (segs.length !== 1) return `Line ${i + 1}: unmapAll does not take any arguments`;
+
             config.insert = {};
             config.normal = {};
             config.visual = {};
@@ -43,37 +46,44 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
         }
 
         // Check if this is a set statement
-        if (segs[0] === "set") {
-            if (segs.length < 3) return `Line ${i + 1}: Not enough arguments for set`;
-            if (segs.length > 3) return `Line ${i + 1}: Too many arguments for set`;
+        if (segs[0] === "set" || segs[0] === "setOn") {
+            const argCt = segs[0] === "set" ? 3 : 4;
+            if (segs.length < argCt) return `Line ${i + 1}: Not enough arguments for ${segs[0]}`;
+            if (segs.length > argCt) return `Line ${i + 1}: Too many arguments for ${segs[0]}`;
 
-            if (segs[1] === "InitialMode") {
-                if (!["insert", "normal", "visual"].includes(segs[2])) {
+            const setting = segs[1];
+            const value = segs[2];
+            if (setting === "InitialMode") {
+                if (!["insert", "normal", "visual"].includes(value)) {
                     return `Line ${i + 1}: Initial mode must be insert, normal, or visual.`;
                 }
-            } else if (segs[1].match("OnFocus")) {
+            } else if (setting.match("OnFocus")) {
                 const options = ["auto", "nothing", "insert", "normal", "visual"];
-                if (!options.includes(segs[2])) {
-                    return `Line ${i + 1}: ${segs[1]} must be one of ${options}`;
+                if (!options.includes(value)) {
+                    return `Line ${i + 1}: ${setting} must be one of ${options}`;
                 }
-            } else if (segs[1].match(/^(Normal|Visual|Insert|Motion)(Dark)?CaretColor$/)) {
-                if (!isValidColor(segs[2])) {
-                    return `Line ${i + 1}: Invalid color '${segs[2]}'`;
+            } else if (setting.match(/^(Normal|Visual|Insert|Motion)(Dark)?CaretColor$/)) {
+                if (!isValidColor(value)) {
+                    return `Line ${i + 1}: Invalid color '${value}'`;
                 }
-            } else if (segs[1].match(/Verbose|(Normal|Visual)BlockInsertions/)) {
-                if (segs[2] !== "true" && segs[2] !== "false") {
-                    return `Line ${i + 1}: ${segs[1]} must be true or false.`;
+            } else if (setting.match(/Verbose|(Normal|Visual)BlockInsertions/)) {
+                if (value !== "true" && value !== "false") {
+                    return `Line ${i + 1}: ${setting} must be true or false.`;
                 }
-            } else if (segs[1] === "MaxRepeat") {
-                const num = +segs[2];
+            } else if (setting === "MaxRepeat") {
+                const num = +value;
                 if (!isFinite(num) || num < 1 || num % 1 !== 0) {
-                    return `Line ${i + 1}: Invalid positive integer '${segs[2]}'`;
+                    return `Line ${i + 1}: Invalid positive integer '${value}'`;
                 }
             } else {
-                return `Line ${i + 1}: Invalid setting '${segs[1]}'`;
+                return `Line ${i + 1}: Invalid setting '${setting}'`;
             }
 
-            config.settings[segs[1]] = segs[2];
+            if (segs[0] === "set") {
+                config.settings[setting] = value;
+            } else {
+                config.siteSettings.push([setting, value, segs[3]]);
+            }
             continue;
         }
 

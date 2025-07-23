@@ -138,7 +138,15 @@ function verboseLog(...data: any[]) {
 
 // Get the stored config
 chrome.storage.sync.get("config", (result) => {
-    config = result.config ?? defaultVinputConfig;
+    config = { ...(result.config ?? defaultVinputConfig) };
+
+    // Load site-specific settings
+    config.settings = { ...config.settings };
+    for (const [setting, value, site] of config.siteSettings) {
+        if (window.location.href.match(new RegExp(`^${site}$`))) {
+            config.settings[setting] = value;
+        }
+    }
 
     // Set the default mode
     const m = config.settings.InitialMode;
@@ -325,11 +333,9 @@ function onFocusChange() {
         const activeDoc = activeDocument(document);
         const el = activeDoc.activeElement;
         const isEditable =
-            (el instanceof HTMLTextAreaElement && !el.readOnly && !el.disabled) ||
-            (el instanceof HTMLInputElement && !el.readOnly && !el.disabled) ||
-            (el instanceof HTMLElement && el.contentEditable === "true") ||
+            ["TEXTAREA", "INPUT"].includes(el?.tagName!) ||
+            (el && "contentEditable" in el && el.contentEditable === "true") ||
             el?.parentElement?.contentEditable === "true";
-        verboseLog(isEditable);
 
         changeState({ mode: isEditable ? "insert" : "normal" });
     } else if (onFocus === "insert" || onFocus === "normal" || onFocus === "visual") {
