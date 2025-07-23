@@ -154,7 +154,7 @@ chrome.storage.sync.get("config", (result) => {
 
     // Load site-specific settings
     config.settings = { ...config.settings };
-    for (const [setting, value, site] of config.siteSettings) {
+    for (const { site, setting, value } of config.siteSettings) {
         if (window.location.href.match(new RegExp(`^${site}$`))) {
             config.settings[setting] = value;
         }

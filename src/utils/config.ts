@@ -13,8 +13,11 @@ export type VinputConfig = {
     visual: VinputConfigKeymap;
     motion: VinputConfigKeymap;
     settings: Record<string, string>;
-    // Array of [SETTING, VALUE, SITE]
-    siteSettings: [string, string, string][];
+    siteSettings: {
+        site: string;
+        setting: string;
+        value: string;
+    }[];
 };
 
 export const defaultVinputConfigText = `

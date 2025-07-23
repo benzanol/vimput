@@ -47,42 +47,48 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
 
         // Check if this is a set statement
         if (segs[0] === "set" || segs[0] === "setOn") {
-            const argCt = segs[0] === "set" ? 3 : 4;
-            if (segs.length < argCt) return `Line ${i + 1}: Not enough arguments for ${segs[0]}`;
-            if (segs.length > argCt) return `Line ${i + 1}: Too many arguments for ${segs[0]}`;
-
-            const setting = segs[1];
-            const value = segs[2];
-            if (setting === "InitialMode") {
-                if (!["insert", "normal", "visual"].includes(value)) {
-                    return `Line ${i + 1}: Initial mode must be insert, normal, or visual.`;
-                }
-            } else if (setting.match("OnFocus")) {
-                const options = ["auto", "nothing", "insert", "normal", "visual"];
-                if (!options.includes(value)) {
-                    return `Line ${i + 1}: ${setting} must be one of ${options}`;
-                }
-            } else if (setting.match(/^(Normal|Visual|Insert|Motion)(Dark)?CaretColor$/)) {
-                if (!isValidColor(value)) {
-                    return `Line ${i + 1}: Invalid color '${value}'`;
-                }
-            } else if (setting.match(/Verbose|(Normal|Visual)BlockInsertions/)) {
-                if (value !== "true" && value !== "false") {
-                    return `Line ${i + 1}: ${setting} must be true or false.`;
-                }
-            } else if (setting === "MaxRepeat") {
-                const num = +value;
-                if (!isFinite(num) || num < 1 || num % 1 !== 0) {
-                    return `Line ${i + 1}: Invalid positive integer '${value}'`;
-                }
+            if (segs[0] === "set") {
+                if (segs.length < 3) return `Line ${i + 1}: Not enough arguments for set`;
+                if (segs.length > 3) return `Line ${i + 1}: Too many arguments for set`;
             } else {
-                return `Line ${i + 1}: Invalid setting '${setting}'`;
+                if (segs.length % 2 === 1) return `Line ${i + 1}: Each setting must have a value`;
             }
 
-            if (segs[0] === "set") {
-                config.settings[setting] = value;
-            } else {
-                config.siteSettings.push([setting, value, segs[3]]);
+            // Loop through settings for setOn
+            for (let j = segs[0] === "set" ? 1 : 2; j < segs.length; j += 2) {
+                const setting = segs[j];
+                const value = segs[j + 1];
+                if (setting === "InitialMode") {
+                    if (!["insert", "normal", "visual"].includes(value)) {
+                        return `Line ${i + 1}: Initial mode must be insert, normal, or visual.`;
+                    }
+                } else if (setting.match("OnFocus")) {
+                    const options = ["auto", "nothing", "insert", "normal", "visual"];
+                    if (!options.includes(value)) {
+                        return `Line ${i + 1}: ${setting} must be one of ${options}`;
+                    }
+                } else if (setting.match(/^(Normal|Visual|Insert|Motion)(Dark)?CaretColor$/)) {
+                    if (!isValidColor(value)) {
+                        return `Line ${i + 1}: Invalid color '${value}'`;
+                    }
+                } else if (setting.match(/Verbose|(Normal|Visual)BlockInsertions/)) {
+                    if (value !== "true" && value !== "false") {
+                        return `Line ${i + 1}: ${setting} must be true or false.`;
+                    }
+                } else if (setting === "MaxRepeat") {
+                    const num = +value;
+                    if (!isFinite(num) || num < 1 || num % 1 !== 0) {
+                        return `Line ${i + 1}: Invalid positive integer '${value}'`;
+                    }
+                } else {
+                    return `Line ${i + 1}: Invalid setting '${setting}'`;
+                }
+
+                if (segs[0] === "set") {
+                    config.settings[setting] = value;
+                } else {
+                    config.siteSettings.push({ setting, value, site: segs[1] });
+                }
             }
             continue;
         }
