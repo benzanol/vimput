@@ -20,20 +20,22 @@ async function ensureDebuggerAttached(tabId: number): Promise<void> {
 }
 
 // Detect when the debugger detaches
-chrome.debugger.onDetach.addListener(({ tabId }) => {
-    if (tabId && attachedTabs.has(tabId)) {
-        attachedTabs.delete(tabId);
-        console.error(`Debugger detached from tab ${tabId}`);
-    }
-});
+if (chrome.debugger) {
+    chrome.debugger.onDetach.addListener(({ tabId }) => {
+        if (tabId && attachedTabs.has(tabId)) {
+            attachedTabs.delete(tabId);
+            console.error(`Debugger detached from tab ${tabId}`);
+        }
+    });
 
-// Detect when the tab is closed
-chrome.tabs.onRemoved.addListener((tabId) => {
-    if (attachedTabs.has(tabId)) {
-        chrome.debugger.detach({ tabId });
-        attachedTabs.delete(tabId);
-    }
-});
+    // Detect when the tab is closed
+    chrome.tabs.onRemoved.addListener((tabId) => {
+        if (attachedTabs.has(tabId)) {
+            chrome.debugger.detach({ tabId });
+            attachedTabs.delete(tabId);
+        }
+    });
+}
 
 // ==================== Sending Keys ====================
 
@@ -118,7 +120,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
         performKeyPress(tabId, message.key as KeyCombo).finally(() => respond());
         return true;
     } else if (message.type === "changeMode") {
-        chrome.action.setIcon({
+        chrome.browserAction.setIcon({
             tabId,
             path: { "128": `/resources/icons/${message.mode}.png` },
         });
