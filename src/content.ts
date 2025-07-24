@@ -4,7 +4,6 @@ import { defaultVinputConfig } from "./utils/config";
 import { ModeManager } from "./utils/modeManager";
 
 // Get the stored config
-console.log("Get config");
 chrome.storage.local.get("config", (result) => {
     console.log("Got config");
     async function setMode(mode: string): Promise<void> {

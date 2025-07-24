@@ -23,7 +23,7 @@ function activeWindow(root: Window): Window {
 
 // Frame-agnostic way to get the nearest parent element of node
 function nearestElement(node: Node | null | undefined): Element | null {
-    if (node && typeof node === "object" && node.constructor.name === "Element") {
+    if (node && node.nodeType === Node.ELEMENT_NODE) {
         return node as Element;
     } else if (node) {
         return node.parentElement;
@@ -32,15 +32,42 @@ function nearestElement(node: Node | null | undefined): Element | null {
     }
 }
 
-function isBgDark(root: Window): boolean {
-    const doc = activeWindow(root).document;
+// Return a stack of elements, each in a different frame, all containing the caret
+function activeElementStack(doc: Document): Element[] {
     const focusNode = doc.getSelection()?.focusNode;
-    const activeElem = nearestElement(focusNode) ?? doc.activeElement ?? doc.body;
+    const active = nearestElement(focusNode) ?? doc.activeElement ?? doc.body;
 
-    const bg = getComputedStyle(activeElem).backgroundColor;
-    const [r, g, b] = bg.match(/\d+/g)?.map(Number) || [255, 255, 255];
+    if (["FRAME", "IFRAME"].includes(active.tagName!)) {
+        const subDoc = (active as HTMLIFrameElement).contentDocument;
+        if (subDoc) return [active, ...activeElementStack(subDoc)];
+    }
+    return [active];
+}
+
+function getBackgroundColor(elem: Element): string | null {
+    const bg = getComputedStyle(elem).backgroundColor;
+    if (bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
+        return bg;
+    }
+    return elem.parentElement ? getBackgroundColor(elem.parentElement) : null;
+}
+
+// Check if the cursor background is dark
+function isBgDark(root: Window): boolean {
+    // If the first element is in a frame which has a transparent
+    // background, then check if its parent frame has a background,
+    // and so on.
+    const elements = activeElementStack(root.document);
+    const [r, g, b] = elements
+        .reverse()
+        .map((el) => {
+            const color = getBackgroundColor(el);
+            return color === null ? null : color.match(/\d+/g)?.map(Number);
+        })
+        // If opacity is undefined, then it was not included, so it is actually 255
+        .find((color) => color) ?? [255, 255, 255];
+
     const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
     return luminance < 128;
 }
 
@@ -117,7 +144,7 @@ export class ModeManager {
         const m = config.settings.InitialMode;
         const mode = m === "insert" || m === "normal" || m === "visual" ? m : "insert";
 
-        this.changeState({ mode }, true);
+        this.changeState({ mode }, "initial");
     }
 
     private verboseLog(...data: any[]) {
@@ -160,34 +187,34 @@ export class ModeManager {
     // Elements which the plugin has set the caret color on
     private caretColorElems: HTMLElement[] = [];
 
-    private changeState(newState: State, forceRefresh: boolean = false) {
+    private changeState(newState: State, reason: string) {
         const modeChanged = newState.mode !== this.state.mode;
         this.state = newState;
-        if (modeChanged || forceRefresh) {
-            this.verboseLog("Changed mode:", this.state.mode);
+        if (!modeChanged && !["initial", "focus"].includes(reason)) return;
 
-            // Remove the old caret color
-            for (const elem of this.caretColorElems) {
-                elem.style.caretColor = "unset";
-            }
-            this.caretColorElems = [];
+        this.verboseLog(`Changed mode '${this.state.mode}' (${reason})`);
 
-            // Set the new caret color
-            let newColor = this.config.settings[this.upcaseMode() + "CaretColor"];
-            if (isBgDark(this.ctx.window)) {
-                newColor = this.config.settings[this.upcaseMode() + "DarkCaretColor"] ?? newColor;
-            }
-
-            if (newColor) {
-                this.caretColorElems = allDocuments(this.ctx.window.document).map((doc) => {
-                    doc.body.style.caretColor = newColor;
-                    return doc.body;
-                });
-            }
-
-            // Change the mode icon
-            this.ctx.setMode(this.state.mode);
+        // Remove the old caret color
+        for (const elem of this.caretColorElems) {
+            elem.style.caretColor = "unset";
         }
+        this.caretColorElems = [];
+
+        // Set the new caret color
+        let newColor = this.config.settings[this.upcaseMode() + "CaretColor"];
+        if (isBgDark(this.ctx.window)) {
+            newColor = this.config.settings[this.upcaseMode() + "DarkCaretColor"] ?? newColor;
+        }
+
+        if (newColor) {
+            this.caretColorElems = allDocuments(this.ctx.window.document).map((doc) => {
+                doc.body.style.caretColor = newColor;
+                return doc.body;
+            });
+        }
+
+        // Change the mode icon
+        this.ctx.setMode(this.state.mode);
     }
 
     // ==================== Do Command ====================
@@ -215,7 +242,7 @@ export class ModeManager {
             }
 
             // Switch the mode associated with the command
-            if (commandDef.mode) this.changeState({ mode: commandDef.mode });
+            if (commandDef.mode) this.changeState({ mode: commandDef.mode }, "command");
 
             // Perform custom commands
             if (command === "ExitSelection") {
@@ -250,12 +277,12 @@ export class ModeManager {
             this.verboseLog(`Numeric key '${key}'`);
 
             const newRepeat = +((this.state.repeat ?? "") + key);
-            this.changeState({ ...this.state, repeat: newRepeat });
+            this.changeState({ ...this.state, repeat: newRepeat }, "repeat");
             cancel();
             return;
         } else {
             // If not actively updating the repeat number, reset it
-            this.changeState({ ...this.state, repeat: undefined });
+            this.changeState({ ...this.state, repeat: undefined }, "norepeat");
         }
 
         const modeBindings = this.config[this.state.mode];
@@ -266,7 +293,7 @@ export class ModeManager {
             // Exit motion mode if an invalid motion key was pressed
             if (this.state.mode === "motion") {
                 cancel();
-                this.changeState({ mode: this.state.previous });
+                this.changeState({ mode: this.state.previous }, "nomotion");
             } else if (
                 this.config.settings[`${this.upcaseMode()}BlockInsertions`] === "true" &&
                 key.match(/^(S-)?.$/)
@@ -288,11 +315,14 @@ export class ModeManager {
                 console.error("Cannot perform an operator as a motion");
                 return;
             }
-            this.changeState({
-                mode: "motion",
-                operator: keyBinding.commands,
-                previous: this.state.mode,
-            });
+            this.changeState(
+                {
+                    mode: "motion",
+                    operator: keyBinding.commands,
+                    previous: this.state.mode,
+                },
+                "operator",
+            );
             return;
         }
 
@@ -309,7 +339,7 @@ export class ModeManager {
 
             // If still in motion mode, restore the old mode
             if (this.state.mode === "motion") {
-                this.changeState({ mode: this.state.previous });
+                this.changeState({ mode: this.state.previous }, "motion");
             }
         }
     }
@@ -358,52 +388,56 @@ export class ModeManager {
         }
     };
 
+    private previousEditable = false;
     public onFocusChange = () => {
-        if (!this.handlingKeydown && this.lastEventType === "bound") return;
-        this.verboseLog("Focus changed", this.lastEventType);
+        // Check whether an input is focused
+        const activeDoc = activeWindow(this.ctx.window).document;
+        const el = activeDoc.activeElement;
+        // Use tag-names (not instanceof) to make this frame-agnostic
+        const curEditable =
+            ["TEXTAREA", "INPUT"].includes(el?.tagName!) ||
+            (el && "contentEditable" in el && el.contentEditable === "true") ||
+            el?.parentElement?.contentEditable === "true";
 
-        const onFocus = this.config.settings.OnFocus;
+        // If switching between two editable or two non-editable elements, don't do anything
+        if (curEditable === this.previousEditable) return;
+        this.previousEditable = curEditable;
 
-        if (onFocus === "auto") {
-            const activeDoc = activeWindow(this.ctx.window).document;
-            const el = activeDoc.activeElement;
-            // Use tag-names (not instanceof) to make this frame-agnostic
-            const isEditable =
-                ["TEXTAREA", "INPUT"].includes(el?.tagName!) ||
-                (el && "contentEditable" in el && el.contentEditable === "true") ||
-                el?.parentElement?.contentEditable === "true";
+        // Don't change anything if this was the result of a keybinding
+        if (this.handlingKeydown || this.lastEventType === "bound") return;
 
+        const defMode = this.config.settings.DefaultMode;
+        const inputMode = this.config.settings.InputMode;
+        const mode = !curEditable || !inputMode || inputMode === "unset" ? defMode : inputMode;
+
+        if (mode === "insert" || mode === "normal" || mode === "visual") {
             // Update after the focus has changed, so that the background color is detected correctly
-            setTimeout(() => this.changeState({ mode: isEditable ? "insert" : "normal" }, true), 0);
-        } else if (onFocus === "insert" || onFocus === "normal" || onFocus === "visual") {
-            setTimeout(() => this.changeState({ mode: onFocus }, true), 0);
+            setTimeout(() => this.changeState({ mode }, "focus"), 0);
         }
     };
 
     // Enable visual mode when selecting in normal mode
     public onSelectionChange = () => {
-        if (!this.handlingKeydown && this.lastEventType === "bound") return;
+        if (this.handlingKeydown || this.lastEventType === "bound") return;
+        this.verboseLog("Selection changed");
 
         if (this.state.mode === "motion") {
-            this.changeState({ mode: this.state.previous });
+            this.changeState({ mode: this.state.previous }, "selection-motion");
             return;
         }
 
-        const active = this.ctx.window.document.activeElement as HTMLInputElement | undefined;
-        const start = active?.selectionStart;
-        const end = active?.selectionEnd;
-        const selecting = start !== undefined && end !== undefined && start !== end;
+        const active = activeWindow(this.ctx.window);
+        const selecting = Boolean(active.getSelection()?.anchorNode);
 
         if (selecting && this.state.mode === "normal") {
-            this.verboseLog("Switched to visual mode because of selection");
-            this.changeState({ mode: "visual" });
+            this.changeState({ mode: "visual" }, "selection");
         } else if (!selecting && this.state.mode === "visual") {
-            this.verboseLog("Exited visual mode because of no selection");
-            this.changeState({ mode: "normal" });
+            this.changeState({ mode: "normal" }, "noselection");
         }
     };
 
     public onPointerEvent = () => {
+        this.verboseLog("Pointer");
         this.lastEventType = "other";
     };
 }

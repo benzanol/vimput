@@ -22,8 +22,8 @@ export type VinputConfig = {
 
 export const defaultVinputConfigText = `
 # Settings
-set InitialMode insert
-set OnFocus auto
+set DefaultMode normal
+set InputMode insert
 set MaxRepeat 50
 set NormalBlockInsertions true
 set VisualBlockInsertions true
@@ -87,7 +87,7 @@ nmap Y SelectLineEnd Copy Left
 
 # Visual mode
 xmap q ExitSelection Normal
-xmap o SwapSelectionDirection Normal
+xmap o SwapSelectionDirection
 xmap i Left Insert
 xmap a Right Insert
 

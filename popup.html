@@ -156,16 +156,13 @@
             <div class="doc-statement">unmapAll</div>
             <p>Unmap all keybindings</p>
 
-            <div class="doc-statement">set InitialMode insert/normal/visual</div>
-            <p>Set the initial mode when opening a new tab</p>
+            <div class="doc-statement">set DefaultMode insert/normal/visual/unset</div>
+            <p>Set the default mode.</p>
+            <p>If unset, the mode can only be changed by the user.</p>
 
-            <div class="doc-statement">set OnFocus auto/nothing/insert/normal/visual</div>
-            <p>Switch to the specified mode when the page focus changes.</p>
-            <p>
-                If <em>auto</em>, then switch to insert when selecting an input and normal
-                otherwise.
-            </p>
-            <p>If <em>nothing</em>, then do nothing when focus changes.</p>
+            <div class="doc-statement">set InputMode insert/normal/visual/unset</div>
+            <p>The default mode when selecting an input element.</p>
+            <p>If unset, use the value of DefaultMode.</p>
 
             <div class="doc-statement">set [Insert/Normal/Visual/Motion]CaretColor COLOR/unset</div>
             <p>Set the color of the caret when in a particular mode</p>

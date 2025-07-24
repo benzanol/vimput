@@ -58,14 +58,9 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
             for (let j = segs[0] === "set" ? 1 : 2; j < segs.length; j += 2) {
                 const setting = segs[j];
                 const value = segs[j + 1];
-                if (setting === "InitialMode") {
+                if (setting.match(/(Default|Input)Mode/)) {
                     if (!["insert", "normal", "visual"].includes(value)) {
-                        return `Line ${i + 1}: Initial mode must be insert, normal, or visual.`;
-                    }
-                } else if (setting.match("OnFocus")) {
-                    const options = ["auto", "nothing", "insert", "normal", "visual"];
-                    if (!options.includes(value)) {
-                        return `Line ${i + 1}: ${setting} must be one of ${options}`;
+                        return `Line ${i + 1}: ${setting} must be insert, normal, or visual.`;
                     }
                 } else if (setting.match(/^(Normal|Visual|Insert|Motion)(Dark)?CaretColor$/)) {
                     if (!isValidColor(value)) {
