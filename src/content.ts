@@ -298,12 +298,12 @@ async function onKeydown(event: KeyboardEvent): Promise<void> {
 
 function watchDocument(doc: Document) {
     doc.removeEventListener("keydown", onKeydown);
-    doc.addEventListener("keydown", onKeydown);
+    doc.addEventListener("keydown", onKeydown, true);
 
     doc.removeEventListener("selectionchange", onSelectionChange);
-    doc.addEventListener("selectionchange", onSelectionChange);
+    doc.addEventListener("selectionchange", onSelectionChange, true);
     doc.removeEventListener("pointerdown", onSelectionChange);
-    doc.addEventListener("pointerdown", onSelectionChange);
+    doc.addEventListener("pointerdown", onSelectionChange, true);
 
     // Third argument=true means watch every node in the dom for focus changes
     doc.removeEventListener("focus", onFocusChange);
