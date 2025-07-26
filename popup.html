@@ -163,8 +163,19 @@
                 (when a textarea or input element is selected).
             </p>
 
-            <div class="doc-statement">set SwitchModeOnFocus true/false</div>
-            <p>Switch to DefaultMode/DefaultInsertMode when an element is focused/unfocused.</p>
+            <div class="doc-statement">set AutoSwitchMode never/focus/always</div>
+            <p>When to automatically switch modes.</p>
+            <p>
+                The mode that will be switched to is detemined by DefaultMode and DefaultInputMode.
+            </p>
+            <p>If "focus", then switch modes when entering/exiting an input field.</p>
+            <p>
+                If "always", then switch modes whenever the user makes an action external to the
+                plugin (ie, clicking around inside of the current text field.)
+            </p>
+
+            <div class="doc-statement">set VisualModeOnSelect true/false</div>
+            <p>Enable visual mode when the user selects text.</p>
 
             <div class="doc-statement">set [Normal/Visual]BlockInsertions true/false</div>
             <p>When true, block all unmapped non-modifier keys in the specified mode.</p>

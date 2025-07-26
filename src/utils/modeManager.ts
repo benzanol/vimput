@@ -446,7 +446,7 @@ export class ModeManager {
         // Don't change mode when a keybinding moves to a new input element
         if (inInput && this.lastEventType === "bound") return;
 
-        if (this.config.settings.SwitchModeOnFocus) {
+        if ((this.config.settings.AutoSwitchMode ?? "never") !== "never") {
             this.changeState({ mode: this.defaultMode() }, "focus", true);
         }
 
@@ -471,7 +471,7 @@ export class ModeManager {
             return;
         }
 
-        if (selecting && this.state.mode !== "visual" && this.config.settings.VisualOnSelect) {
+        if (selecting && this.state.mode !== "visual" && this.config.settings.VisualModeOnSelect) {
             this.changeState({ mode: "visual" }, "selection");
         } else if (!selecting && this.state.mode === "visual") {
             this.changeState({ mode: this.defaultMode() }, "noselection");
@@ -481,6 +481,7 @@ export class ModeManager {
     public onPointerEvent = () => {
         this.verboseLog("Pointer");
         this.lastEventType = "other";
+        if (this.config.settings.AutoSwitchMode === "always") this.onFocusChange();
         this.onSelectionChange();
     };
 }

@@ -39,8 +39,8 @@ const modeString = z.enum(["insert", "normal", "visual", "off"]);
 export const settingSchemas = {
     DefaultMode: modeString,
     DefaultInputMode: modeString,
-    SwitchModeOnFocus: booleanString,
-    VisualOnSelect: booleanString,
+    VisualModeOnSelect: booleanString,
+    AutoSwitchMode: z.enum(["never", "focus", "always"]),
 
     NormalBlockInsertions: booleanString,
     VisualBlockInsertions: booleanString,
