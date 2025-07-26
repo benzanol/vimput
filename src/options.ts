@@ -2,6 +2,9 @@ import { commandTypes } from "./utils/commands";
 import { defaultVinputConfigText, defaultVinputConfig } from "./utils/config";
 import { parseConfiguration, VinputConfig } from "./utils/parseConfig";
 
+// const maxWidth = getComputedStyle(document.body.parentElement!).maxWidth;
+// document.body.innerText = `Max width is set to ${maxWidth}`;
+
 // ==================== Elements ====================
 
 function checkElement<T extends Element>(id: string, cls: new (...args: any) => T): T {
