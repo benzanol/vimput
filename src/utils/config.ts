@@ -1,39 +1,24 @@
-import type { CommandName } from "./commands";
-import { parseConfiguration } from "./parseConfig";
-
-// An action can either be a 'command', which executes normally, or an
-// 'operator', which first waits for a motion, and then executes.
-type VinputAction = { type: "command" | "operator"; commands: CommandName[] };
-
-// A mapping from keybindings to lists of commands
-type VinputConfigKeymap = Record<string, VinputAction>;
-export type VinputConfig = {
-    insert: VinputConfigKeymap;
-    normal: VinputConfigKeymap;
-    visual: VinputConfigKeymap;
-    motion: VinputConfigKeymap;
-    settings: Record<string, string>;
-    siteSettings: {
-        site: string;
-        setting: string;
-        value: string;
-    }[];
-};
+import { parseConfiguration, VinputConfig } from "./parseConfig";
 
 export const defaultVinputConfigText: string = `
-# Settings
-set InitialMode normal
-set FocusMode insert
-set UnfocusMode normal
-set MaxRepeat 50
+# Switch mode on focus
+set DefaultMode normal
+set DefaultInputMode insert
+set SwitchModeOnFocus true
+
+# Block unbound keys in normal/visual mode
 set NormalBlockInsertions true
 set VisualBlockInsertions true
 
-# Light background caret colors
+# Repeat at most 50 times
+set MaxRepeat 50
+
+# Caret color for light backgrounds
 set NormalCaretColor #094
 set MotionCaretColor #b92
 set VisualCaretColor #b06
-# Dark background caret colors
+
+# Caret color for dark backgrounds
 set NormalDarkCaretColor #3fa
 set MotionDarkCaretColor #fd3
 set VisualDarkCaretColor #f0f

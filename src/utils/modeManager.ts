@@ -1,5 +1,5 @@
 import { flattenedCommands, type CommandName } from "./commands";
-import { type VinputConfig } from "./config";
+import { VinputConfig } from "./parseConfig";
 
 // ==================== Utils ====================
 
@@ -76,19 +76,8 @@ function preventEvent(event: KeyboardEvent) {
     event.stopPropagation();
 }
 
-function isInputFocused(root: Window): boolean {
-    const activeDoc = activeWindow(root).document;
-    const el = activeDoc.activeElement;
-    // Use tag-names (not instanceof) to make this frame-agnostic
-    const inInput =
-        ["TEXTAREA", "INPUT"].includes(el?.tagName!) ||
-        (el && "contentEditable" in el && el.contentEditable === "true") ||
-        el?.parentElement?.contentEditable === "true";
-    return inInput;
-}
-
-function isMode(m: string): m is "disabled" | "insert" | "normal" | "visual" {
-    return ["disabled", "insert", "normal", "visual"].includes(m);
+function capitalize<T extends string>(str: T): Capitalize<T> {
+    return (str.charAt(0).toUpperCase() + str.slice(1)) as Capitalize<T>;
 }
 
 // ==================== State Manager ====================
@@ -97,7 +86,7 @@ function isMode(m: string): m is "disabled" | "insert" | "normal" | "visual" {
 // user provides a motion, and also which mode to return to after the
 // operator is performed.
 type State =
-    | { mode: "disabled" }
+    | { mode: "off" }
     | { mode: "insert" | "normal" | "visual"; repeat?: number }
     | {
           mode: "motion";
@@ -143,12 +132,7 @@ export class ModeManager {
         });
 
         // Figure out which mode to start in
-        // const inInput = isInputFocused(this.ctx.window);
-        // this.previouslyInInput = inInput;
-        // const mode1 = inInput ? this.config.settings.FocusMode : this.config.settings.UnfocusMode;
-        const initialMode = this.config.settings.InitialMode;
-        const mode = isMode(initialMode) ? initialMode : "disabled";
-        this.changeState({ mode }, "init", true);
+        this.changeState({ mode: this.defaultMode() }, "init", true);
     }
 
     // ==================== Config ====================
@@ -160,15 +144,32 @@ export class ModeManager {
         config.settings = { ...config.settings };
         for (const { site, setting, value } of config.siteSettings) {
             if (this.ctx.window.location.href.match(new RegExp(`^${site}$`))) {
-                config.settings[setting] = value;
+                (config.settings as any)[setting] = value;
             }
         }
     }
 
     private verboseLog(...data: any[]) {
-        if (this.config.settings.Verbose === "true") {
-            console.log("vinput:", ...data);
-        }
+        if (this.config.settings.Verbose) console.log("vinput:", ...data);
+    }
+
+    private isInputFocused(): boolean {
+        const activeDoc = activeWindow(this.ctx.window).document;
+        const el = activeDoc.activeElement;
+        // Use tag-names (not instanceof) to make this frame-agnostic
+        return (
+            ["TEXTAREA", "INPUT"].includes(el?.tagName!) ||
+            (el && "contentEditable" in el && el.contentEditable === "true") ||
+            el?.parentElement?.contentEditable === "true"
+        );
+    }
+
+    private defaultMode(): "off" | "insert" | "normal" | "visual" {
+        return (
+            (this.isInputFocused() && this.config.settings.DefaultInputMode) ||
+            this.config.settings.DefaultMode ||
+            "insert"
+        );
     }
 
     // ==================== Watching ====================
@@ -199,8 +200,7 @@ export class ModeManager {
     // ==================== Modal State ====================
 
     // Don't show the mode icon until the config is loaded
-    private state: State = { mode: "normal" };
-    private upcaseMode = () => this.state.mode[0].toUpperCase() + this.state.mode.slice(1);
+    private state: State = { mode: "off" };
 
     // Elements which the plugin has set the caret color on
     private caretColorElems: HTMLElement[] = [];
@@ -219,16 +219,20 @@ export class ModeManager {
         this.caretColorElems = [];
 
         // Set the new caret color
-        let newColor = this.config.settings[this.upcaseMode() + "CaretColor"];
-        if (isBgDark(this.ctx.window)) {
-            newColor = this.config.settings[this.upcaseMode() + "DarkCaretColor"] ?? newColor;
-        }
+        const mode = this.state.mode;
+        if (mode !== "off") {
+            // Let the new color be either light or dark background
+            let newColor = this.config.settings[`${capitalize(mode)}CaretColor`];
+            if (isBgDark(this.ctx.window)) {
+                newColor = this.config.settings[`${capitalize(mode)}DarkCaretColor`] ?? newColor;
+            }
 
-        if (newColor) {
-            this.caretColorElems = allDocuments(this.ctx.window.document).map((doc) => {
-                doc.body.style.caretColor = newColor;
-                return doc.body;
-            });
+            if (newColor) {
+                this.caretColorElems = allDocuments(this.ctx.window.document).map((doc) => {
+                    doc.body.style.caretColor = newColor;
+                    return doc.body;
+                });
+            }
         }
 
         // Change the mode icon
@@ -286,10 +290,10 @@ export class ModeManager {
     // ==================== Key Press Logic ====================
 
     public async handleKey(key: string, cancel: () => void) {
-        if (this.state.mode === "disabled") return;
+        if (this.state.mode === "off") return;
 
         let repeat = this.state.repeat ?? 1;
-        const maxRepeat = +this.config.settings.MaxRepeat;
+        const maxRepeat = this.config.settings.MaxRepeat ?? Infinity;
         if (isFinite(maxRepeat) && maxRepeat >= 1 && repeat > maxRepeat) repeat = maxRepeat;
 
         // Check if it is a numeric argument
@@ -315,7 +319,8 @@ export class ModeManager {
                 cancel();
                 this.changeState({ mode: this.state.previous }, "nomotion");
             } else if (
-                this.config.settings[`${this.upcaseMode()}BlockInsertions`] === "true" &&
+                this.state.mode !== "insert" &&
+                this.config.settings[`${capitalize(this.state.mode)}BlockInsertions`] &&
                 key.match(/^(S-)?.$/)
             ) {
                 cancel();
@@ -370,7 +375,7 @@ export class ModeManager {
     private lastEventType: "bound" | "unbound" | "other" = "other";
 
     public onKeydown = async (event: KeyboardEvent) => {
-        if (this.state.mode === "disabled") return;
+        if (this.state.mode === "off") return;
 
         if (["Control", "Shift", "Alt", "Meta", "CapsLock"].includes(event.key)) return;
 
@@ -410,28 +415,21 @@ export class ModeManager {
         }
     };
 
-    // Run the focus change handler on a timer so that if it was
-    // triggered because of a 'blur' event, the new focused element
-    // will be focused at the time of the handler being run
-    public onFocusChange = () => setTimeout(() => this.handleFocusChange(), 0);
-
-    private previouslyInInput: boolean = false;
+    // Update after the focus has changed, so that the new element will be focused
+    private onFocusChange = () => setTimeout(() => this.handleFocusChange(), 0);
     private handleFocusChange() {
-        // Check whether an input is focused
-        const inInput = isInputFocused(this.ctx.window);
-        this.verboseLog("Focus changed", inInput);
-
-        // If switching between two editable or two non-editable elements, don't do anything
-        if (inInput === this.previouslyInInput) return;
-        this.previouslyInInput = inInput;
-
-        // Don't change anything if this was the result of a keybinding
         if (this.handlingKeydown) return;
 
-        const mode = inInput ? this.config.settings.FocusMode : this.config.settings.UnfocusMode;
+        // Check whether an input is focused
+        const inInput = this.isInputFocused();
+        this.verboseLog("Focus changed", inInput);
 
-        // Update after the focus has changed, so that the background color is detected correctly
-        if (isMode(mode)) setTimeout(() => this.changeState({ mode }, "focus", true), 0);
+        // Don't change mode when a keybinding moves to a new input element
+        if (inInput && this.lastEventType === "bound") return;
+
+        if (this.config.settings.SwitchModeOnFocus) {
+            this.changeState({ mode: this.defaultMode() }, "focus", true);
+        }
     }
 
     // Enable visual mode when selecting in normal mode
@@ -447,10 +445,10 @@ export class ModeManager {
         const active = activeWindow(this.ctx.window);
         const selecting = !active.getSelection()?.isCollapsed;
 
-        if (selecting && this.state.mode === "normal") {
+        if (selecting && this.state.mode !== "visual") {
             this.changeState({ mode: "visual" }, "selection");
         } else if (!selecting && this.state.mode === "visual") {
-            this.changeState({ mode: "normal" }, "noselection");
+            this.changeState({ mode: this.defaultMode() }, "noselection");
         }
     };
 

@@ -1,5 +1,82 @@
 import { CommandName, flattenedCommands } from "./commands";
-import { VinputConfig } from "./config";
+import z from "zod";
+
+// ==================== Setting Schemas ====================
+
+// Reusable schemas
+const booleanString = z
+    .string()
+    .refine((v) => v === "true" || v === "false", {
+        message: "Must be true or false",
+    })
+    .transform((v) => v === "true");
+
+const positiveIntString = z
+    .string()
+    .refine(
+        (v) => {
+            const n = Number(v);
+            return Number.isInteger(n) && n >= 1;
+        },
+        { message: "Must be a positive integer" },
+    )
+    .transform((v) => Number(v));
+
+const caretColor = z.string().refine(
+    (color) => {
+        const s = new Option().style;
+        s.color = color;
+        return s.color !== "";
+    },
+    {
+        message: "Invalid color",
+    },
+);
+
+const modeString = z.enum(["insert", "normal", "visual", "off"]);
+
+// Object mapping setting names (patterns) to schemas
+export const settingSchemas = {
+    DefaultMode: modeString,
+    DefaultInputMode: modeString,
+    SwitchModeOnFocus: booleanString,
+
+    NormalBlockInsertions: booleanString,
+    VisualBlockInsertions: booleanString,
+
+    MaxRepeat: positiveIntString,
+
+    NormalCaretColor: caretColor,
+    VisualCaretColor: caretColor,
+    InsertCaretColor: caretColor,
+    MotionCaretColor: caretColor,
+    NormalDarkCaretColor: caretColor,
+    VisualDarkCaretColor: caretColor,
+    InsertDarkCaretColor: caretColor,
+    MotionDarkCaretColor: caretColor,
+
+    Verbose: booleanString,
+} as const;
+
+type SettingsSchemas = typeof settingSchemas;
+type SettingsType = Partial<{ [S in keyof SettingsSchemas]: z.output<SettingsSchemas[S]> }>;
+
+// ==================== Parsing ====================
+
+// An action can either be a 'command', which executes normally, or an
+// 'operator', which first waits for a motion, and then executes.
+type VinputAction = { type: "command" | "operator"; commands: CommandName[] };
+
+// A mapping from keybindings to lists of commands
+type VinputConfigKeymap = Record<string, VinputAction>;
+export type VinputConfig = {
+    insert: VinputConfigKeymap;
+    normal: VinputConfigKeymap;
+    visual: VinputConfigKeymap;
+    motion: VinputConfigKeymap;
+    settings: SettingsType;
+    siteSettings: { site: string; setting: string; value: any }[];
+};
 
 const mapKeywords: Record<string, ("insert" | "normal" | "visual" | "motion")[]> = {
     nmap: ["normal"],
@@ -11,12 +88,6 @@ const mapKeywords: Record<string, ("insert" | "normal" | "visual" | "motion")[]>
     "map!": ["normal", "visual", "motion", "insert"],
 };
 
-function isValidColor(color: string): boolean {
-    const s = new Option().style;
-    s.color = color;
-    return s.color !== "";
-}
-
 // Parse the vinput config, and return an error message if parsing failed
 export function parseConfiguration(text: string, def?: VinputConfig): VinputConfig | string {
     // Create a deep (enough) copy of the default config
@@ -25,7 +96,7 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
         normal: { ...def?.normal },
         visual: { ...def?.visual },
         motion: { ...def?.motion },
-        settings: { ...def?.settings },
+        settings: { ...(def?.settings ?? {}) },
         siteSettings: [],
     };
 
@@ -58,31 +129,14 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
             for (let j = segs[0] === "set" ? 1 : 2; j < segs.length; j += 2) {
                 const setting = segs[j];
                 const value = segs[j + 1];
-                if (setting.match(/(Initial|Focus|Unfocus)Mode/)) {
-                    const options = ["disabled", "insert", "normal", "visual"];
-                    if (setting !== "InitialMode") options.push("none");
-                    if (!options.includes(value)) {
-                        return `Line ${i + 1}: ${setting} must be one of ${options}.`;
-                    }
-                } else if (setting.match(/^(Normal|Visual|Insert|Motion)(Dark)?CaretColor$/)) {
-                    if (!isValidColor(value)) {
-                        return `Line ${i + 1}: Invalid color '${value}'`;
-                    }
-                } else if (setting.match(/Verbose|(Normal|Visual)BlockInsertions/)) {
-                    if (value !== "true" && value !== "false") {
-                        return `Line ${i + 1}: ${setting} must be true or false.`;
-                    }
-                } else if (setting === "MaxRepeat") {
-                    const num = +value;
-                    if (!isFinite(num) || num < 1 || num % 1 !== 0) {
-                        return `Line ${i + 1}: Invalid positive integer '${value}'`;
-                    }
-                } else {
-                    return `Line ${i + 1}: Invalid setting '${setting}'`;
-                }
+                const schema = (settingSchemas as Record<string, z.Schema>)[setting];
+                if (!schema) return `Line ${i + 1}: Invalid setting '${setting}'`;
 
-                if (segs[0] === "set") {
-                    config.settings[setting] = value;
+                const parsed = schema.safeParse(value);
+                if (!parsed.success) {
+                    return `Line ${i + 1}: ${parsed.error}`;
+                } else if (segs[0] === "set") {
+                    (config.settings as any)[setting] = parsed;
                 } else {
                     config.siteSettings.push({ setting, value, site: segs[1] });
                 }

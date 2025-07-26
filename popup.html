@@ -156,17 +156,15 @@
             <div class="doc-statement">unmapAll</div>
             <p>Unmap all keybindings.</p>
 
-            <div class="doc-statement">
-                set FocusMode/UnfocusMode none/disabled/insert/normal/visual
-            </div>
+            <div class="doc-statement">set Default[Input]Mode insert/normal/visual/off</div>
+            <p>DefaultMode is the initial mode when opening a new tab.</p>
             <p>
-                If this is not set to 'none', then switch to the specified mode whenever the user
-                focuses/unfocuses an input element.
+                If DefaultInputMode is set, then this will be the default mode for inputting text
+                (when a textarea or input element is selected).
             </p>
 
-            <div class="doc-statement">set InitialMode disabled/insert/normal/visual</div>
-            <p>Start in this mode when opening a new tab.</p>
-            <p>This will be overridden by FocusMode/UnfocusMode, if they are set.</p>
+            <div class="doc-statement">set SwitchModeOnFocus true/false</div>
+            <p>Switch to DefaultMode/DefaultInsertMode when an element is focused/unfocused.</p>
 
             <div class="doc-statement">set [Normal/Visual]BlockInsertions true/false</div>
             <p>When true, block all unmapped non-modifier keys in the specified mode.</p>

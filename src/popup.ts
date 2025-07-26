@@ -1,6 +1,6 @@
 import { commandTypes } from "./utils/commands";
-import { defaultVinputConfigText, defaultVinputConfig, VinputConfig } from "./utils/config";
-import { parseConfiguration } from "./utils/parseConfig";
+import { defaultVinputConfigText, defaultVinputConfig } from "./utils/config";
+import { parseConfiguration, VinputConfig } from "./utils/parseConfig";
 
 // ==================== Elements ====================
 
@@ -94,7 +94,7 @@ const defText = defaultVinputConfigText.trim();
 defaultConfigElem.value = defText;
 defaultConfigElem.rows = defText.split("\n").length;
 
-type ExtensionStorage = {
+export type ExtensionStorage = {
     configText?: string;
     config?: VinputConfig;
 };
