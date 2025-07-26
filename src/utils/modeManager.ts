@@ -410,8 +410,13 @@ export class ModeManager {
         }
     };
 
+    // Run the focus change handler on a timer so that if it was
+    // triggered because of a 'blur' event, the new focused element
+    // will be focused at the time of the handler being run
+    public onFocusChange = () => setTimeout(() => this.handleFocusChange(), 0);
+
     private previouslyInInput: boolean = false;
-    public onFocusChange = () => {
+    private handleFocusChange() {
         // Check whether an input is focused
         const inInput = isInputFocused(this.ctx.window);
         this.verboseLog("Focus changed", inInput);
@@ -427,7 +432,7 @@ export class ModeManager {
 
         // Update after the focus has changed, so that the background color is detected correctly
         if (isMode(mode)) setTimeout(() => this.changeState({ mode }, "focus", true), 0);
-    };
+    }
 
     // Enable visual mode when selecting in normal mode
     public onSelectionChange = () => {

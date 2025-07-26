@@ -22,9 +22,9 @@ export type VinputConfig = {
 
 export const defaultVinputConfigText: string = `
 # Settings
-set InitialMode insert
+set InitialMode normal
 set FocusMode insert
-set UnfocusMode insert
+set UnfocusMode normal
 set MaxRepeat 50
 set NormalBlockInsertions true
 set VisualBlockInsertions true
@@ -39,7 +39,9 @@ set MotionDarkCaretColor #fd3
 set VisualDarkCaretColor #f0f
 
 # Entering normal mode
-imap C-q Normal
+imap A-q Normal
+xmap q ExitSelection Normal
+xmap A-q ExitSelection Normal
 
 # Entering insert mode
 nmap i Insert
@@ -73,7 +75,8 @@ nmap Z BackspaceWord
 # Miscellaneous
 nmap v Visual
 nmap V LineStart SelectLineEnd Visual
-nmap p Paste
+nmap p LineEnd Enter Paste
+nmap P Paste
 nmap u Undo
 nmap U Redo
 nmap J LineEnd Delete
@@ -87,14 +90,13 @@ nmap C SelectLineEnd Cut Insert
 nmap Y SelectLineEnd Copy Left
 
 # Visual mode
-xmap q ExitSelection Normal
 xmap o SwapSelectionDirection
 xmap i Left Insert
 xmap a Right Insert
 
 xmap c Cut Insert
 xmap d Cut Normal
-xmap y Copy
+xmap y Copy ExitSelection Normal
 
 # Visual/motion navigation
 oxmap h SelectLeft
