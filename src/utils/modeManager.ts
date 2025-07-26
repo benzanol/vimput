@@ -371,24 +371,25 @@ export class ModeManager {
 
     public onKeydown = async (event: KeyboardEvent) => {
         if (this.state.mode === "disabled") return;
+
+        if (["Control", "Shift", "Alt", "Meta", "CapsLock"].includes(event.key)) return;
+
+        let key = event.key;
+        if (event.shiftKey) key = "S-" + key;
+        if (event.ctrlKey) key = "C-" + key;
+        if (event.altKey) key = "A-" + key;
+
+        // Check if currently in the process of pressing a key
+        if (this.pressingKey && this.pressingKey === key) {
+            this.verboseLog(`Extension key '${key}'`);
+            return;
+        } else if (this.handlingKeydown) {
+            this.verboseLog(`Blocked overlapping key '${key}'`);
+            preventEvent(event);
+            return;
+        }
+
         try {
-            if (["Control", "Shift", "Alt", "Meta", "CapsLock"].includes(event.key)) return;
-
-            let key = event.key;
-            if (event.shiftKey) key = "S-" + key;
-            if (event.ctrlKey) key = "C-" + key;
-            if (event.altKey) key = "A-" + key;
-
-            // Check if currently in the process of pressing a key
-            if (this.pressingKey && this.pressingKey === key) {
-                this.verboseLog(`Extension key '${key}'`);
-                return;
-            } else if (this.handlingKeydown) {
-                this.verboseLog(`Blocked overlapping key '${key}'`);
-                preventEvent(event);
-                return;
-            }
-
             this.handlingKeydown = true;
 
             // Start off by assuming the key is unbound, and if the
@@ -405,7 +406,7 @@ export class ModeManager {
             // selection change listener runs before it is set to false,
             // meaning that if a command makes the visual selection have
             // length 0, visual mode will not be immediately disabled
-            setTimeout(() => (this.handlingKeydown = false), 20);
+            setTimeout(() => (this.handlingKeydown = false), 10);
         }
     };
 
