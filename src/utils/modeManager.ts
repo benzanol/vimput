@@ -76,12 +76,28 @@ function preventEvent(event: KeyboardEvent) {
     event.stopPropagation();
 }
 
+function isInputFocused(root: Window): boolean {
+    const activeDoc = activeWindow(root).document;
+    const el = activeDoc.activeElement;
+    // Use tag-names (not instanceof) to make this frame-agnostic
+    const inInput =
+        ["TEXTAREA", "INPUT"].includes(el?.tagName!) ||
+        (el && "contentEditable" in el && el.contentEditable === "true") ||
+        el?.parentElement?.contentEditable === "true";
+    return inInput;
+}
+
+function isMode(m: string): m is "disabled" | "insert" | "normal" | "visual" {
+    return ["disabled", "insert", "normal", "visual"].includes(m);
+}
+
 // ==================== State Manager ====================
 
 // For the motion mode, we need to know which operator to run once the
 // user provides a motion, and also which mode to return to after the
 // operator is performed.
 type State =
+    | { mode: "disabled" }
     | { mode: "insert" | "normal" | "visual"; repeat?: number }
     | {
           mode: "motion";
@@ -125,6 +141,14 @@ export class ModeManager {
             childList: true,
             subtree: true,
         });
+
+        // Figure out which mode to start in
+        // const inInput = isInputFocused(this.ctx.window);
+        // this.previouslyInInput = inInput;
+        // const mode1 = inInput ? this.config.settings.FocusMode : this.config.settings.UnfocusMode;
+        const initialMode = this.config.settings.InitialMode;
+        const mode = isMode(initialMode) ? initialMode : "disabled";
+        this.changeState({ mode }, "init", true);
     }
 
     // ==================== Config ====================
@@ -139,12 +163,6 @@ export class ModeManager {
                 config.settings[setting] = value;
             }
         }
-
-        // Set the default mode
-        const m = config.settings.InitialMode;
-        const mode = m === "insert" || m === "normal" || m === "visual" ? m : "insert";
-
-        this.changeState({ mode }, "initial");
     }
 
     private verboseLog(...data: any[]) {
@@ -187,10 +205,10 @@ export class ModeManager {
     // Elements which the plugin has set the caret color on
     private caretColorElems: HTMLElement[] = [];
 
-    private changeState(newState: State, reason: string) {
+    private changeState(newState: State, reason: string, force: boolean = false) {
         const modeChanged = newState.mode !== this.state.mode;
         this.state = newState;
-        if (!modeChanged && !["initial", "focus"].includes(reason)) return;
+        if (!force && !modeChanged) return;
 
         this.verboseLog(`Changed mode '${this.state.mode}' (${reason})`);
 
@@ -268,6 +286,8 @@ export class ModeManager {
     // ==================== Key Press Logic ====================
 
     public async handleKey(key: string, cancel: () => void) {
+        if (this.state.mode === "disabled") return;
+
         let repeat = this.state.repeat ?? 1;
         const maxRepeat = +this.config.settings.MaxRepeat;
         if (isFinite(maxRepeat) && maxRepeat >= 1 && repeat > maxRepeat) repeat = maxRepeat;
@@ -350,6 +370,7 @@ export class ModeManager {
     private lastEventType: "bound" | "unbound" | "other" = "other";
 
     public onKeydown = async (event: KeyboardEvent) => {
+        if (this.state.mode === "disabled") return;
         try {
             if (["Control", "Shift", "Alt", "Meta", "CapsLock"].includes(event.key)) return;
 
@@ -384,42 +405,33 @@ export class ModeManager {
             // selection change listener runs before it is set to false,
             // meaning that if a command makes the visual selection have
             // length 0, visual mode will not be immediately disabled
-            this.handlingKeydown = false;
+            setTimeout(() => (this.handlingKeydown = false), 20);
         }
     };
 
-    private previousEditable = false;
+    private previouslyInInput: boolean = false;
     public onFocusChange = () => {
         // Check whether an input is focused
-        const activeDoc = activeWindow(this.ctx.window).document;
-        const el = activeDoc.activeElement;
-        // Use tag-names (not instanceof) to make this frame-agnostic
-        const curEditable =
-            ["TEXTAREA", "INPUT"].includes(el?.tagName!) ||
-            (el && "contentEditable" in el && el.contentEditable === "true") ||
-            el?.parentElement?.contentEditable === "true";
+        const inInput = isInputFocused(this.ctx.window);
+        this.verboseLog("Focus changed", inInput);
 
         // If switching between two editable or two non-editable elements, don't do anything
-        if (curEditable === this.previousEditable) return;
-        this.previousEditable = curEditable;
+        if (inInput === this.previouslyInInput) return;
+        this.previouslyInInput = inInput;
 
         // Don't change anything if this was the result of a keybinding
-        if (this.handlingKeydown || this.lastEventType === "bound") return;
+        if (this.handlingKeydown) return;
 
-        const defMode = this.config.settings.DefaultMode;
-        const inputMode = this.config.settings.InputMode;
-        const mode = !curEditable || !inputMode || inputMode === "unset" ? defMode : inputMode;
+        const mode = inInput ? this.config.settings.FocusMode : this.config.settings.UnfocusMode;
 
-        if (mode === "insert" || mode === "normal" || mode === "visual") {
-            // Update after the focus has changed, so that the background color is detected correctly
-            setTimeout(() => this.changeState({ mode }, "focus"), 0);
-        }
+        // Update after the focus has changed, so that the background color is detected correctly
+        if (isMode(mode)) setTimeout(() => this.changeState({ mode }, "focus", true), 0);
     };
 
     // Enable visual mode when selecting in normal mode
     public onSelectionChange = () => {
         if (this.handlingKeydown || this.lastEventType === "bound") return;
-        this.verboseLog("Selection changed");
+        this.verboseLog("Selection changed", this.lastEventType);
 
         if (this.state.mode === "motion") {
             this.changeState({ mode: this.state.previous }, "selection-motion");
@@ -427,7 +439,7 @@ export class ModeManager {
         }
 
         const active = activeWindow(this.ctx.window);
-        const selecting = Boolean(active.getSelection()?.anchorNode);
+        const selecting = !active.getSelection()?.isCollapsed;
 
         if (selecting && this.state.mode === "normal") {
             this.changeState({ mode: "visual" }, "selection");

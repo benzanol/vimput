@@ -20,22 +20,23 @@ export type VinputConfig = {
     }[];
 };
 
-export const defaultVinputConfigText = `
+export const defaultVinputConfigText: string = `
 # Settings
-set DefaultMode normal
-set InputMode insert
+set InitialMode insert
+set FocusMode insert
+set UnfocusMode insert
 set MaxRepeat 50
 set NormalBlockInsertions true
 set VisualBlockInsertions true
 
 # Light background caret colors
-set NormalCaretColor #009944
-set MotionCaretColor #bb9922
-set VisualCaretColor #bb0066
+set NormalCaretColor #094
+set MotionCaretColor #b92
+set VisualCaretColor #b06
 # Dark background caret colors
-set NormalDarkCaretColor #33ffaa
-set MotionDarkCaretColor #ffdd33
-set VisualDarkCaretColor #ff00ff
+set NormalDarkCaretColor #3fa
+set MotionDarkCaretColor #fd3
+set VisualDarkCaretColor #f0f
 
 # Entering normal mode
 imap C-q Normal

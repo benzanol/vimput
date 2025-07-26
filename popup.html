@@ -154,32 +154,36 @@
             </p>
 
             <div class="doc-statement">unmapAll</div>
-            <p>Unmap all keybindings</p>
+            <p>Unmap all keybindings.</p>
 
-            <div class="doc-statement">set DefaultMode insert/normal/visual/unset</div>
-            <p>Set the default mode.</p>
-            <p>If unset, the mode can only be changed by the user.</p>
+            <div class="doc-statement">
+                set FocusMode/UnfocusMode none/disabled/insert/normal/visual
+            </div>
+            <p>
+                If this is not set to 'none', then switch to the specified mode whenever the user
+                focuses/unfocuses an input element.
+            </p>
 
-            <div class="doc-statement">set InputMode insert/normal/visual/unset</div>
-            <p>The default mode when selecting an input element.</p>
-            <p>If unset, use the value of DefaultMode.</p>
+            <div class="doc-statement">set InitialMode disabled/insert/normal/visual</div>
+            <p>Start in this mode when opening a new tab.</p>
+            <p>This will be overridden by FocusMode/UnfocusMode, if they are set.</p>
+
+            <div class="doc-statement">set [Normal/Visual]BlockInsertions true/false</div>
+            <p>When true, block all unmapped non-modifier keys in the specified mode.</p>
 
             <div class="doc-statement">set [Insert/Normal/Visual/Motion]CaretColor COLOR/unset</div>
-            <p>Set the color of the caret when in a particular mode</p>
+            <p>Set the color of the caret when in a particular mode.</p>
 
             <div class="doc-statement">
                 set [Insert/Normal/Visual/Motion]DarkCaretColor COLOR/unset
             </div>
-            <p>Specify an alternate caret color for dark backgrounds</p>
-
-            <div class="doc-statement">set [Normal/Visual]BlockInsertions true/false</div>
-            <p>When true, block all unmapped non-modifier keys in the specified mode</p>
+            <p>Specify an alternate caret color for dark backgrounds.</p>
 
             <div class="doc-statement">set MaxRepeat NUMBER</div>
-            <p>Set the maximum number of times for a key to repeat</p>
+            <p>Set the maximum number of times for a key to repeat.</p>
 
             <div class="doc-statement">set Verbose true/false</div>
-            <p>Enable/disable verbose logging</p>
+            <p>Enable/disable verbose logging.</p>
 
             <div class="doc-statement">setOn SITE SETTING1 VALUE1 SETTING2 VALUE2 ...</div>
             <p>Customize one or more settings for a particular site.</p>
