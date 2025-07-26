@@ -71,13 +71,25 @@ function isBgDark(root: Window): boolean {
     return luminance < 128;
 }
 
+function isSelecting(root: Window): boolean {
+    const win = activeWindow(root);
+
+    const elem = win.document.activeElement;
+    const start = (elem as any)?.selectionStart;
+    const end = (elem as any)?.selectionEnd;
+    return (
+        !win.getSelection()?.isCollapsed ||
+        (typeof start === "number" && typeof end === "number" && start !== end)
+    );
+}
+
 function preventEvent(event: KeyboardEvent) {
     event.preventDefault();
     event.stopPropagation();
 }
 
 function capitalize<T extends string>(str: T): Capitalize<T> {
-    return (str.charAt(0).toUpperCase() + str.slice(1)) as Capitalize<T>;
+    return (str[0].toUpperCase() + str.slice(1)) as Capitalize<T>;
 }
 
 // ==================== State Manager ====================
@@ -206,6 +218,10 @@ export class ModeManager {
     private caretColorElems: HTMLElement[] = [];
 
     private changeState(newState: State, reason: string, force: boolean = false) {
+        if (!["off", "insert", "normal", "visual", "motion"].includes(newState.mode)) {
+            throw new Error(`Invalid mode ${JSON.stringify(newState.mode)} ${reason}`);
+        }
+
         const modeChanged = newState.mode !== this.state.mode;
         this.state = newState;
         if (!force && !modeChanged) return;
@@ -411,7 +427,10 @@ export class ModeManager {
             // selection change listener runs before it is set to false,
             // meaning that if a command makes the visual selection have
             // length 0, visual mode will not be immediately disabled
-            setTimeout(() => (this.handlingKeydown = false), 10);
+            setTimeout(() => {
+                this.handlingKeydown = false;
+                this.onSelectionChange();
+            }, 10);
         }
     };
 
@@ -430,22 +449,29 @@ export class ModeManager {
         if (this.config.settings.SwitchModeOnFocus) {
             this.changeState({ mode: this.defaultMode() }, "focus", true);
         }
+
+        this.onSelectionChange();
     }
 
     // Enable visual mode when selecting in normal mode
+    private wasSelecting = isSelecting(this.ctx.window);
     public onSelectionChange = () => {
+        // Exit if the selection state didn't change
+        const selecting = isSelecting(this.ctx.window);
+        if (selecting === this.wasSelecting) return;
+        this.wasSelecting = selecting;
+
+        this.verboseLog("Selection changed", selecting);
+
+        // Exit if this was the result of a key binding
         if (this.handlingKeydown || this.lastEventType === "bound") return;
-        this.verboseLog("Selection changed", this.lastEventType);
 
         if (this.state.mode === "motion") {
             this.changeState({ mode: this.state.previous }, "selection-motion");
             return;
         }
 
-        const active = activeWindow(this.ctx.window);
-        const selecting = !active.getSelection()?.isCollapsed;
-
-        if (selecting && this.state.mode !== "visual") {
+        if (selecting && this.state.mode !== "visual" && this.config.settings.VisualOnSelect) {
             this.changeState({ mode: "visual" }, "selection");
         } else if (!selecting && this.state.mode === "visual") {
             this.changeState({ mode: this.defaultMode() }, "noselection");
@@ -455,5 +481,6 @@ export class ModeManager {
     public onPointerEvent = () => {
         this.verboseLog("Pointer");
         this.lastEventType = "other";
+        this.onSelectionChange();
     };
 }

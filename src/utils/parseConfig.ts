@@ -40,6 +40,7 @@ export const settingSchemas = {
     DefaultMode: modeString,
     DefaultInputMode: modeString,
     SwitchModeOnFocus: booleanString,
+    VisualOnSelect: booleanString,
 
     NormalBlockInsertions: booleanString,
     VisualBlockInsertions: booleanString,

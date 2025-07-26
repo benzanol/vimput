@@ -5,6 +5,7 @@ export const defaultVinputConfigText: string = `
 set DefaultMode normal
 set DefaultInputMode insert
 set SwitchModeOnFocus true
+set VisualOnSelect true
 
 # Block unbound keys in normal/visual mode
 set NormalBlockInsertions true
