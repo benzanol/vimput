@@ -105,7 +105,6 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
         const segs = lines[i].split(/[ \t]+/).filter((s) => s);
         if (segs.length === 0 || segs[0].startsWith("#")) continue;
 
-        // Check if this is a unmapAll statement
         if (segs[0] === "unmapAll") {
             if (segs.length !== 1) return `Line ${i + 1}: unmapAll does not take any arguments`;
 
@@ -136,9 +135,9 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
                 if (!parsed.success) {
                     return `Line ${i + 1}: ${parsed.error}`;
                 } else if (segs[0] === "set") {
-                    (config.settings as any)[setting] = parsed;
+                    (config.settings as any)[setting] = parsed.data;
                 } else {
-                    config.siteSettings.push({ setting, value, site: segs[1] });
+                    config.siteSettings.push({ setting, value: parsed.data, site: segs[1] });
                 }
             }
             continue;
