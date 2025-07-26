@@ -92,6 +92,61 @@ function capitalize<T extends string>(str: T): Capitalize<T> {
     return (str[0].toUpperCase() + str.slice(1)) as Capitalize<T>;
 }
 
+type Selection = {
+    window: Window;
+    area: HTMLTextAreaElement | HTMLInputElement | null;
+    anchorNode: Node;
+    anchorOffset: number;
+    focusNode: Node;
+    focusOffset: number;
+};
+
+function getSelection(root: Window): Selection | null {
+    const win = activeWindow(root);
+    const active = win.document.activeElement;
+    if (active && ["TEXTAREA", "INPUT"].includes(active.tagName)) {
+        const area = active as HTMLTextAreaElement | HTMLInputElement;
+        if (area.selectionStart) {
+            const forwards = area.selectionDirection === "forward";
+            const end = area.selectionEnd ?? area.selectionStart;
+            return {
+                window: win,
+                area: area,
+                anchorNode: area,
+                anchorOffset: forwards ? area.selectionStart : end,
+                focusNode: area,
+                focusOffset: forwards ? end : area.selectionStart,
+            };
+        }
+    }
+
+    const sel = win.getSelection();
+    if (!sel || !sel.focusNode) return null;
+
+    return {
+        window: win,
+        area: null,
+        anchorNode: sel.anchorNode ?? sel.focusNode,
+        anchorOffset: sel.anchorOffset,
+        focusNode: sel.focusNode,
+        focusOffset: sel.focusOffset,
+    };
+}
+
+function loadSelection(sel: Selection): void {
+    if (sel.area) {
+        sel.area.focus();
+        const start = Math.min(sel.focusOffset, sel.anchorOffset);
+        const end = Math.max(sel.focusOffset, sel.anchorOffset);
+        const direction = sel.focusOffset === start ? "backward" : "forward";
+        sel.area.setSelectionRange(start, end, direction);
+    } else {
+        sel.window
+            .getSelection()!
+            .setBaseAndExtent(sel.anchorNode, sel.anchorOffset, sel.focusNode, sel.focusOffset);
+    }
+}
+
 // ==================== State Manager ====================
 
 // For the motion mode, we need to know which operator to run once the
@@ -291,14 +346,15 @@ export class ModeManager {
                     await this.pressKey("ArrowLeft");
                 }
             } else if (command === "SwapSelectionDirection") {
-                const sel = activeWindow(this.ctx.window).getSelection();
-                if (!sel || !sel.anchorNode || !sel.focusNode) return;
-                sel.setBaseAndExtent(
-                    sel.focusNode,
-                    sel.focusOffset,
-                    sel.anchorNode,
-                    sel.anchorOffset,
-                );
+                const sel = getSelection(this.ctx.window);
+                if (!sel) return;
+                loadSelection({
+                    ...sel,
+                    focusNode: sel.anchorNode,
+                    focusOffset: sel.anchorOffset,
+                    anchorNode: sel.focusNode,
+                    anchorOffset: sel.focusOffset,
+                });
             }
         }
     }
