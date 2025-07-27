@@ -538,7 +538,12 @@ export class ModeManager {
             return;
         }
 
-        if (selecting && this.state.mode !== "visual" && this.config.settings.VisualModeOnSelect) {
+        if (
+            selecting &&
+            this.state.mode !== "visual" &&
+            this.state.mode !== "off" &&
+            this.config.settings.VisualModeOnSelect
+        ) {
             this.changeState({ mode: "visual" }, "selection");
         } else if (!selecting && this.state.mode === "visual") {
             this.changeState({ mode: this.defaultMode() }, "noselection");

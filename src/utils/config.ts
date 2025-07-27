@@ -1,11 +1,13 @@
 import { parseConfiguration, VimputConfig } from "./parseConfig";
 
 export const defaultConfigText: string = `
-# Switch mode on focus
-set DefaultMode normal
+# Keep the extension off by default, but enter insert mode when selecting an input field
+set DefaultMode off
 set DefaultInputMode insert
 set AutoSwitchMode always
-set VisualModeOnSelect true
+
+# Switch to visual mode when selecting text
+set VisualModeOnSelect false
 
 # Block unbound keys in normal/visual mode
 set NormalBlockInsertions true
