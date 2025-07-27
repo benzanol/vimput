@@ -210,7 +210,9 @@ export class ModeManager {
         // Load site-specific settings
         config.settings = { ...config.settings };
         for (const { site, setting, value } of config.siteSettings) {
-            if (this.ctx.window.location.href.match(new RegExp(`^${site}$`))) {
+            // Remove the extension prefix (https://)
+            const href = this.ctx.window.location.href.replace(/^[^\/]+:\/\//, "");
+            if (href.match(new RegExp(`^${site}$`))) {
                 (config.settings as any)[setting] = value;
             }
         }

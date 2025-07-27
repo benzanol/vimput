@@ -163,7 +163,7 @@
                     <div class="doc-heading">Commands</div>
                     <div id="commands"></div>
 
-                    <div class="doc-heading">Configuration Options</div>
+                    <div class="doc-heading">Mapping keys</div>
 
                     <div class="doc-statement">
                         nmap/xmap/omap/imap/oxmap/map/map! KEY COMMAND1 COMMAND2 ...
@@ -192,6 +192,8 @@
                         operator must then operate on using the commands specified.
                     </p>
 
+                    <div class="doc-heading">Controlling the default mode</div>
+
                     <div class="doc-statement">set Default[Input]Mode insert/normal/visual/off</div>
                     <p>DefaultMode is the initial mode when opening a new tab.</p>
                     <p>
@@ -214,8 +216,12 @@
                     <div class="doc-statement">set VisualModeOnSelect true/false</div>
                     <p>Enable visual mode when the user selects text.</p>
 
+                    <div class="doc-heading">Blocking extraneous events</div>
+
                     <div class="doc-statement">set [Normal/Visual]BlockInsertions true/false</div>
                     <p>When true, block all unmapped non-modifier keys in the specified mode.</p>
+
+                    <div class="doc-heading">Appearance</div>
 
                     <div class="doc-statement">
                         set [Insert/Normal/Visual/Motion]CaretColor COLOR/unset
@@ -227,17 +233,25 @@
                     </div>
                     <p>Specify an alternate caret color for dark backgrounds.</p>
 
+                    <div class="doc-heading">Miscellaneous</div>
+
                     <div class="doc-statement">set MaxRepeat NUMBER</div>
                     <p>Set the maximum number of times for a key to repeat.</p>
 
                     <div class="doc-statement">set Verbose true/false</div>
                     <p>Enable/disable verbose logging.</p>
 
+                    <div class="doc-heading">Site-specific configuration</div>
+
                     <div class="doc-statement">seton SITE SETTING1 VALUE1 SETTING2 VALUE2 ...</div>
                     <p>Customize one or more settings for a particular site.</p>
                     <p>
-                        SITE is a javascript regexp that must match the full url of the site in
-                        question.
+                        SITE is a javascript regexp that must fully match the url of the site in
+                        question (not including the http[s]:// prefix).
+                    </p>
+                    <p>
+                        For example, "seton youtube.com/.* DefaultMode off DefaultInputMode off"
+                        would entirely disable the plugin on all youtube sites.
                     </p>
                     <p>
                         If multiple setOn statements match the same url, the LAST statement will
