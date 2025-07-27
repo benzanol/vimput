@@ -3,7 +3,7 @@
     "name": "vimput",
     "version": "1.0",
     "description": "Simulate vim keybindings in chrome",
-    "permissions": ["storage", "debugger", "activeTab"],
+    "permissions": ["storage", "debugger"],
     "background": {
         "service_worker": "dist/background.js"
     },
