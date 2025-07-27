@@ -1,99 +1,45 @@
-<style>
-    .doc-heading {
-        font-weight: 600;
-        font-size: 1.2em;
-        margin: 0.8em 0 0.4em 0;
-    }
-    .doc-statement {
-        font-family: monospace;
-        font-weight: 500;
-        font-size: 1.2em;
-        margin: 0.8em 0 0.3em 0;
-    }
-    #commands {
-        column-count: 3;
-        column-gap: 1em;
-    }
-</style>
+# vimput
 
-<div class="doc-heading">Commands</div>
-<div id="commands"></div>
+Add real vim keybindings to chrome for editing text.
 
-<div class="doc-heading">Mapping keys</div>
+Unlike existing extensions which enable vim keys for page navigation,
+"vimput" allows you to navigate within and edit browser text fields.
 
-<div class="doc-statement">nmap/xmap/omap/imap/oxmap/map/map! KEY COMMAND1 COMMAND2 ...</div>
-<p>Map KEY to execute one or more commands (see next section for valid commands.)</p>
-<p>
-    nmap, xmap, omap, and imap bind the key in normal, visual, operator-pending, and insert mode
-    respectively. oxmap binds the key in operator and visual mode, map binds the key in all but
-    insert mode, and map! binds the key in every mode.
-</p>
-<p>
-    KEY must have the form [A-][C-][S-]KEYNAME, where KEYNAME follows the KeyboardEvent.key
-    specification. For examples of keys, see the default configuration. To find out the name for a
-    particular key, enable verbose mode, open the browser console, and press the key you want to
-    bind.
-</p>
+By default, the extension starts in "off" mode, and switches to
+"insert" mode whenever a text field is selected (but this behavior can
+be customized). Since "Escape" is already used by the browser, "Alt+q"
+is the default keybinding to enter normal mode.
 
-<div class="doc-statement">nmap/xmap/imap KEY operator CMD1 CMD2 ...</div>
-<p>
-    Map KEY to execute a new operator. Before executing the operator, the user must perform a
-    motion. This motion will select a region of text, which the operator must then operate on using
-    the commands specified.
-</p>
+Once in normal mode, you will be able to use many of vim's default
+keybindings. The full list of keybindings, as well as settings
+controlling the extension's behavior, can be viewed and customized by
+clicking on the extension icon.
 
-<div class="doc-heading">Controlling the default mode</div>
 
-<div class="doc-statement">set Default[Input]Mode insert/normal/visual/off</div>
-<p>DefaultMode is the initial mode when opening a new tab.</p>
-<p>
-    If DefaultInputMode is set, then this will be the default mode for inputting text (when a
-    textarea or input element is selected).
-</p>
+## Implementation
 
-<div class="doc-statement">set AutoSwitchMode never/focus/always</div>
-<p>When to automatically switch modes.</p>
-<p>The mode that will be switched to is detemined by DefaultMode and DefaultInputMode.</p>
-<p>If "focus", then switch modes when entering/exiting an input field.</p>
-<p>
-    If "always", then switch modes whenever the user makes an action external to the plugin (ie,
-    clicking around inside of the current text field.)
-</p>
+The extension is implemented by intercepting all keyboard events and
+replacing them with new ones. For example, if you press the l key
+while in normal mode, the extension will intercept it, and then send
+the page an ArrowRight event in its place. Similarly, if you were in
+visual mode, it would send a Shift+ArrowRight event in order to expand
+the selection to the right.
 
-<div class="doc-statement">set VisualModeOnSelect true/false</div>
-<p>Enable visual mode when the user selects text.</p>
+This should give a general idea of what the extension is and is not
+capable of. For example, it is possible to simulate "0" by pressing
+"Home", but there is no way to simulate the "^" key, since the browser
+does not have a key to jump to the beginning of a line's text. The
+extension then implements repeated keys by simply performing the
+associated key presses a bunch of times.
 
-<div class="doc-heading">Blocking extraneous events</div>
+The motion/operator system is a special case. When you press an
+operator, the extension will wait for the user to input a valid
+motion. The motion will then be run first, and select a region of
+text. The operator will then act on the selected text. For example, if
+you press "dd", the extension will send "Home" to go to the beginning
+of the line, "Shift+End" to select to the end of the line, and finally
+"Control+x" to cut that region.
 
-<div class="doc-statement">set [Normal/Visual]BlockInsertions true/false</div>
-<p>When true, block all unmapped non-modifier keys in the specified mode.</p>
 
-<div class="doc-heading">Appearance</div>
 
-<div class="doc-statement">set [Insert/Normal/Visual/Motion]CaretColor COLOR/unset</div>
-<p>Set the color of the caret when in a particular mode.</p>
 
-<div class="doc-statement">set [Insert/Normal/Visual/Motion]DarkCaretColor COLOR/unset</div>
-<p>Specify an alternate caret color for dark backgrounds.</p>
-
-<div class="doc-heading">Miscellaneous</div>
-
-<div class="doc-statement">set MaxRepeat NUMBER</div>
-<p>Set the maximum number of times for a key to repeat.</p>
-
-<div class="doc-statement">set Verbose true/false</div>
-<p>Enable/disable verbose logging.</p>
-
-<div class="doc-heading">Site-specific configuration</div>
-
-<div class="doc-statement">seton SITE SETTING1 VALUE1 SETTING2 VALUE2 ...</div>
-<p>Customize one or more settings for a particular site.</p>
-<p>
-    SITE is a javascript regexp that must fully match the url of the site in question (not including
-    the http[s]:// prefix).
-</p>
-<p>
-    For example, "seton youtube.com/.* DefaultMode off DefaultInputMode off" would entirely disable
-    the plugin on all youtube sites.
-</p>
-<p>If multiple setOn statements match the same url, the LAST statement will take priority.</p>
