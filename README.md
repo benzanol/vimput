@@ -2,9 +2,10 @@
 
 Simulate arrow keys and text editing keys using vim-style bindings.
 
-Vimput natively simulates arrows, backspace, delete, Ctrl+x/c/v/z,
-home, and end keys, meaning that the plugin will natively work without
-modification wherever these keys are available.
+Since vimput simulates the browser's built-in text editing keys, it
+will natively work on any website without modification. This includes
+websites like Google Docs, which implement their own custom rendering,
+and websites like notion where the text area is not a single element.
 
 Currently supported normal mode commands are:
 - Numeric prefixes for repeating any command
@@ -42,6 +43,14 @@ is the default keybinding to enter normal mode. Once in normal mode,
 you will be able to use many of vim's default keybindings.
 
 
+## Macos limitations
+
+MacOS does not allow simulating any events which have the Command
+prefix. Luckily, this only eliminates the beginning/end of file keys,
+and command shortcuts (cut, copy, paste, undo redo.) Due to this, "d"
+is instead mapped to backspace on MacOS instead of Cut.
+
+
 ## Implementation
 
 The extension is implemented by intercepting all keyboard events and
@@ -64,7 +73,10 @@ motion. The motion will then be run first, and select a region of
 text. The operator will then act on the selected text. For example, if
 you press "dd", the extension will send "Home" to go to the beginning
 of the line, "Shift+End" to select to the end of the line, and finally
-"Control+x" to cut that region.
+"Control+x" to cut that region. For example, if you wanted to remap
+"d" to simply delete instead of cut, you could write `nmap d operator
+Backspace` in your config. Since Backspace will delete the selected
+text, this is a valid operator.
 
 
 
