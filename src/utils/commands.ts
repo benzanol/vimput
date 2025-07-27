@@ -153,7 +153,7 @@ export const commandTypes = {
             description: "Exit the selection, putting the cursor on the correct side",
         },
         SwapSelectionDirection: {
-            description: "Move the caret to the opposite side of the selection",
+            description: "Move the cursor to the opposite side of the selection",
         },
     },
 } as const;

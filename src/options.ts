@@ -1,5 +1,5 @@
 import { commandTypes } from "./utils/commands";
-import { defaultVinputConfigText, defaultVinputConfig } from "./utils/config";
+import { defaultVinputConfigText } from "./utils/config";
 import { parseConfiguration, VinputConfig } from "./utils/parseConfig";
 
 // const maxWidth = getComputedStyle(document.body.parentElement!).maxWidth;
@@ -60,7 +60,7 @@ function setUserMessage(message: string, error: boolean = false) {
 // Add save button listener
 saveElem.addEventListener("click", async () => {
     try {
-        const output = parseConfiguration(configElem.value, defaultVinputConfig);
+        const output = parseConfiguration(configElem.value);
 
         // Show feedback to user
         if (typeof output === "string") {
@@ -105,7 +105,7 @@ export type ExtensionStorage = {
 // Get data
 chrome.storage.sync.get<ExtensionStorage>("configText", (result) => {
     const textarea = configElem;
-    configText = result?.configText ?? "";
+    configText = result?.configText ?? defaultVinputConfigText;
     textarea.value = configText;
     updateSaveButton();
 });

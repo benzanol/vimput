@@ -159,6 +159,9 @@
 
             <div id="right-column" class="column">
                 <div id="documentation">
+                    <div class="doc-heading">Commands</div>
+                    <div id="commands"></div>
+
                     <div class="doc-heading">Configuration Options</div>
 
                     <div class="doc-statement">
@@ -232,7 +235,7 @@
                     <div class="doc-statement">set Verbose true/false</div>
                     <p>Enable/disable verbose logging.</p>
 
-                    <div class="doc-statement">setOn SITE SETTING1 VALUE1 SETTING2 VALUE2 ...</div>
+                    <div class="doc-statement">seton SITE SETTING1 VALUE1 SETTING2 VALUE2 ...</div>
                     <p>Customize one or more settings for a particular site.</p>
                     <p>
                         SITE is a javascript regexp that must match the full url of the site in
@@ -242,9 +245,6 @@
                         If multiple setOn statements match the same url, the LAST statement will
                         take priority.
                     </p>
-
-                    <div class="doc-heading">Commands</div>
-                    <div id="commands"></div>
 
                     <div class="doc-heading">Default Config</div>
                     <textarea readonly spellcheck="false" id="default-config"></textarea>

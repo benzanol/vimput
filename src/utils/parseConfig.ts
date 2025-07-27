@@ -90,14 +90,14 @@ const mapKeywords: Record<string, ("insert" | "normal" | "visual" | "motion")[]>
 };
 
 // Parse the vinput config, and return an error message if parsing failed
-export function parseConfiguration(text: string, def?: VinputConfig): VinputConfig | string {
+export function parseConfiguration(text: string): VinputConfig | string {
     // Create a deep (enough) copy of the default config
     const config: VinputConfig = {
-        insert: { ...def?.insert },
-        normal: { ...def?.normal },
-        visual: { ...def?.visual },
-        motion: { ...def?.motion },
-        settings: { ...(def?.settings ?? {}) },
+        insert: {},
+        normal: {},
+        visual: {},
+        motion: {},
+        settings: {},
         siteSettings: [],
     };
 
@@ -117,7 +117,7 @@ export function parseConfiguration(text: string, def?: VinputConfig): VinputConf
         }
 
         // Check if this is a set statement
-        if (segs[0] === "set" || segs[0] === "setOn") {
+        if (segs[0] === "set" || segs[0] === "seton") {
             if (segs[0] === "set") {
                 if (segs.length < 3) return `Line ${i + 1}: Not enough arguments for set`;
                 if (segs.length > 3) return `Line ${i + 1}: Too many arguments for set`;

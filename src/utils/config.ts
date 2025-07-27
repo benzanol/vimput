@@ -106,7 +106,7 @@ omap y LineStart SelectLineEnd
 oxmap W BackwardWord SelectForwardWord
 # Select everything
 oxmap A Top SelectBottom
-`;
+`.trimStart();
 
 const parsed = parseConfiguration(defaultVinputConfigText);
 if (typeof parsed === "string") throw new Error("Invalid default config: " + parsed);
