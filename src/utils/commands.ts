@@ -33,10 +33,12 @@ export const commandTypes = {
         BackwardWord: {
             description: "Move cursor to the previous word",
             keys: ["C-ArrowLeft"],
+            appleKeys: ["A-ArrowLeft"],
         },
         ForwardWord: {
             description: "Move cursor to the next word",
             keys: ["C-ArrowRight"],
+            appleKeys: ["A-ArrowRight"],
         },
         LineStart: {
             description: "Move cursor to the start of the line",
@@ -75,10 +77,12 @@ export const commandTypes = {
         SelectBackwardWord: {
             description: "Expand selection to previous word",
             keys: ["C-S-ArrowLeft"],
+            appleKeys: ["A-S-ArrowLeft"],
         },
         SelectForwardWord: {
             description: "Expand selection to next word",
             keys: ["C-S-ArrowRight"],
+            appleKeys: ["A-S-ArrowRight"],
         },
         SelectLineStart: {
             description: "Expand selection to the start of the line",
@@ -109,20 +113,17 @@ export const commandTypes = {
         BackspaceWord: {
             description: "Delete previous word",
             keys: ["C-Backspace"],
+            appleKeys: ["A-Backspace"],
         },
         DeleteWord: {
             description: "Delete next word",
             keys: ["C-Delete"],
+            appleKeys: ["A-Delete"],
         },
         Enter: {
             description: "Create a new line",
             keys: ["Enter"],
         },
-        // Could not figure out how to make space work
-        // Space: {
-        //     description: "Insert a space",
-        //     keys: [" "],
-        // },
         Tab: {
             description: "Press the tab key",
             keys: ["Tab"],
@@ -130,22 +131,27 @@ export const commandTypes = {
         Cut: {
             description: "Cut selection",
             keys: ["C-x"],
+            appleKeys: ["Backspace"],
         },
         Copy: {
             description: "Copy selection",
             keys: ["C-c"],
+            appleKeys: ["M-c"],
         },
         Paste: {
             description: "Paste from clipboard",
             keys: ["C-v"],
+            appleKeys: ["M-v"],
         },
         Undo: {
             description: "Undo last action",
             keys: ["C-z"],
+            appleKeys: ["M-z"],
         },
         Redo: {
             description: "Redo last undone action",
             keys: ["C-S-z"],
+            appleKeys: ["M-S-z"],
         },
     },
     "Custom Commands": {
@@ -163,6 +169,7 @@ export type CommandName = { [K in CommandType]: keyof typeof commandTypes[K] }[C
 export type CommandDef = {
     description: string;
     keys?: readonly KeyCombo[];
+    appleKeys?: readonly KeyCombo[];
     mode?: "insert" | "normal" | "visual";
 };
 

@@ -18,9 +18,11 @@ chrome.storage.sync.get("config", (result) => {
         });
     }
 
+    const platform = navigator.platform;
+
     // Create the state manager
     const manager = new ModeManager(
-        { pressKey, setMode, window },
+        { pressKey, setMode, window, platform },
         result?.config ?? defaultConfig,
     );
 

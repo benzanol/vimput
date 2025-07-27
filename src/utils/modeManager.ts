@@ -166,6 +166,7 @@ export type ExtensionContext = {
     window: Window;
     setMode: (mode: State["mode"]) => void;
     pressKey: (key: KeyCombo) => Promise<void>;
+    platform: string;
 };
 
 export class ModeManager {
@@ -341,8 +342,14 @@ export class ModeManager {
         for (const command of commands) {
             const commandDef = flattenedCommands[command];
 
+            const platform = this.ctx.platform;
+            // This is verbatim how the Mozilla docs says to detect whether to use option
+            // https://developer.mozilla.org/en-US/docs/Web/API/Navigator/platform
+            const apple = platform.startsWith("Mac") || platform === "iPhone";
+            const keys = (apple && commandDef.appleKeys) || commandDef.keys || [];
+
             // Press the keys associated with the command
-            for (const keyCombo of commandDef.keys ?? []) {
+            for (const keyCombo of keys) {
                 await this.pressKey(keyCombo);
             }
 
@@ -352,10 +359,10 @@ export class ModeManager {
             // Perform custom commands
             if (command === "ExitSelection") {
                 const direction = activeWindow(this.ctx.window).getSelection()?.direction;
-                if (direction === "forward") {
-                    await this.pressKey("ArrowRight");
-                } else if (direction === "backward") {
-                    await this.pressKey("ArrowLeft");
+                if (direction === "backward") {
+                    await this.performCommands(["Left"]);
+                } else {
+                    await this.performCommands(["Right"]);
                 }
             } else if (command === "SwapSelectionDirection") {
                 const sel = getSelection(this.ctx.window);
@@ -536,8 +543,8 @@ export class ModeManager {
 
         this.verboseLog("Selection changed", selecting);
 
-        // Exit if this was the result of a key binding
-        if (this.handlingKeydown || this.lastEventType === "bound") return;
+        // Exit if this was the result of a key binding (this is supposed to be &&)
+        if (this.handlingKeydown && this.lastEventType === "bound") return;
 
         if (this.state.mode === "motion") {
             this.changeState({ mode: this.state.previous }, "selection-motion");

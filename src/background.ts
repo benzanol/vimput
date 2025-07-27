@@ -67,7 +67,8 @@ const KEY_CODES: Partial<Record<Key, string>> = {
 type Key = keyof typeof KEYS;
 type SKeyCombo = Key | `S-${Key}`;
 type CSKeyCombo = SKeyCombo | `C-${SKeyCombo}`;
-type KeyCombo = CSKeyCombo | `A-${CSKeyCombo}`;
+type MCSKeyCombo = CSKeyCombo | `M-${CSKeyCombo}`;
+type KeyCombo = MCSKeyCombo | `A-${MCSKeyCombo}`;
 
 type EventType = "keyDown" | "keyUp" | "rawKeyDown";
 
@@ -81,6 +82,10 @@ function calculateModifiers(key: KeyCombo): [number, Key] {
     if (key.startsWith("C-")) {
         key = key.substring(2) as KeyCombo;
         modifiers += 2;
+    }
+    if (key.startsWith("M-")) {
+        key = key.substring(2) as KeyCombo;
+        modifiers += 4;
     }
     if (key.startsWith("S-")) {
         key = key.substring(2) as KeyCombo;
