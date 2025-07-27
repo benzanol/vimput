@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Vimput - Modal editing in chrome",
     "short_name": "vimput",
-    "description": "Map vim-style bindings to the browser's built-in text editing keys.",
+    "description": "Simulate arrow keys and text editing keys using vim-style bindings.",
     "author": "Adam Tillou <adam.tillou@gmail.com>",
     "homepage_url": "https://github.com/benzanol/vimput",
     "version": "1.0.0",

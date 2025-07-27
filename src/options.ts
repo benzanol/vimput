@@ -1,4 +1,4 @@
-import { commandTypes } from "./utils/commands";
+import { CommandDef, commandTypes, platformKeys } from "./utils/commands";
 import { defaultConfigText } from "./utils/config";
 import { parseConfiguration, VimputConfig } from "./utils/parseConfig";
 
@@ -31,7 +31,7 @@ for (const [type, cmds] of Object.entries(commandTypes)) {
     typeDiv.textContent = type;
     commandsElem.appendChild(typeDiv);
 
-    for (const [name, def] of Object.entries(cmds)) {
+    for (const [name, def] of Object.entries(cmds) as [string, CommandDef][]) {
         const cmdDiv = commandsElem.appendChild(document.createElement("div"));
         if (def.description) cmdDiv.title = def.description;
 
@@ -43,7 +43,8 @@ for (const [type, cmds] of Object.entries(commandTypes)) {
         if (def.keys || def.mode) {
             const keySpan = cmdDiv.appendChild(document.createElement("span"));
             keySpan.classList.add("command-key");
-            keySpan.textContent = "(" + (def.keys ?? def.mode) + ")";
+            const inner = def.keys ? platformKeys(navigator.platform, def) : def.mode;
+            keySpan.textContent = "(" + inner + ")";
         }
     }
 }

@@ -1,19 +1,45 @@
 # vimput
 
-Add real vim keybindings to chrome for editing text.
+Simulate arrow keys and text editing keys using vim-style bindings.
 
-Unlike existing extensions which enable vim keys for page navigation,
-"vimput" allows you to navigate within and edit browser text fields.
+Vimput natively simulates arrows, backspace, delete, Ctrl+x/c/v/z,
+home, and end keys, meaning that the plugin will natively work without
+modification wherever these keys are available.
+
+Currently supported normal mode commands are:
+- Numeric prefixes for repeating any command
+- `h/j/k/l` for basic navigation
+- `w/e/b` for wordwise navigation
+- `$/^/0` to jump to the start/end of the line
+- `g/G` to jump to the start/end of the document
+- `d/c/y` to read a motion, then perform a delete/change/copy
+- `D/C/Y` to perform a delete/change/copy on the current line
+- `i/a` to enter insert mode
+- `I/A` to enter insert mode at the start/end of the line
+- `o/O` to open a new line below/above, and then entering insert mode
+- `s/S` to delete the current character/line and enter insert mode
+- `x/X` to delete forward/backward
+- `z/Z` to delete a word forward/backward
+- `u/U` to undo/redo
+- `J` to merge the next line with the current line
+- `v` to enter visual mode
+- `V` to select the current line and enter visual mode
+
+Currently supported visual mode commands are:
+- `h/j/k/l/w/e/b/$/^/0/g/G` to move the selection
+- `d/c/y` to delete/change/copy the selected text
+- `o` to swap the selection direction (visual mode)
+- `q/A-q` to exit visual mode at the spot of the cursor
+- `i/a` to enter insert mode at the beginning/end of the selection
+
+The full list of keybindings and settings can be viewed and customized
+in the options menu once the extension is installed.
 
 By default, the extension starts in "off" mode, and switches to
 "insert" mode whenever a text field is selected (but this behavior can
 be customized). Since "Escape" is already used by the browser, "Alt+q"
 is the default keybinding to enter normal mode. Once in normal mode,
 you will be able to use many of vim's default keybindings.
-
-The full list of keybindings, as well as settings controlling the
-extension's behavior, can be viewed and customized by clicking on the
-extension icon.
 
 
 ## Implementation

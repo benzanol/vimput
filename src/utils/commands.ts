@@ -173,6 +173,16 @@ export type CommandDef = {
     mode?: "insert" | "normal" | "visual";
 };
 
+export function isApple(platform: string): boolean {
+    // This is verbatim how the Mozilla docs says to detect whether to use option
+    // https://developer.mozilla.org/en-US/docs/Web/API/Navigator/platform
+    return platform.startsWith("Mac") || platform === "iPhone";
+}
+
+export function platformKeys(platform: string, def: CommandDef): readonly KeyCombo[] {
+    return (isApple(platform) && def.appleKeys) || def.keys || [];
+}
+
 export const flattenedCommands = Object.fromEntries(
     Object.values(commandTypes).flatMap((type) => Object.entries(type)),
 ) as Record<CommandName, CommandDef>;

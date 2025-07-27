@@ -1,4 +1,4 @@
-import { flattenedCommands, type CommandName } from "./commands";
+import { flattenedCommands, platformKeys, type CommandName } from "./commands";
 import { VimputConfig } from "./parseConfig";
 
 // ==================== Utils ====================
@@ -342,11 +342,7 @@ export class ModeManager {
         for (const command of commands) {
             const commandDef = flattenedCommands[command];
 
-            const platform = this.ctx.platform;
-            // This is verbatim how the Mozilla docs says to detect whether to use option
-            // https://developer.mozilla.org/en-US/docs/Web/API/Navigator/platform
-            const apple = platform.startsWith("Mac") || platform === "iPhone";
-            const keys = (apple && commandDef.appleKeys) || commandDef.keys || [];
+            const keys = platformKeys(this.ctx.platform, commandDef);
 
             // Press the keys associated with the command
             for (const keyCombo of keys) {
