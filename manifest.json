@@ -8,9 +8,7 @@
     "version": "1.0.0",
 
     "icons": {
-        "16": "resources/icons/vimput16.png",
-        "48": "resources/icons/vimput48.png",
-        "128": "resources/icons/vimput128.png"
+        "128": "resources/icons/padded128.png"
     },
     "action": {
         "default_icon": {
