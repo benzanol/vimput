@@ -381,7 +381,11 @@ export class ModeManager {
         if (isFinite(maxRepeat) && maxRepeat >= 1 && repeat > maxRepeat) repeat = maxRepeat;
 
         // Check if it is a numeric argument
-        if (this.state.mode !== "insert" && key.match(/^[0123456789]$/)) {
+        if (
+            this.state.mode !== "insert" &&
+            key.match(/^[0123456789]$/) &&
+            !(this.state.repeat === undefined && key === "0")
+        ) {
             this.verboseLog(`Numeric key '${key}'`);
 
             const newRepeat = +((this.state.repeat ?? "") + key);

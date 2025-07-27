@@ -49,6 +49,7 @@ nmap l Right
 nmap b BackwardWord
 nmap w ForwardWord
 nmap e ForwardWord
+nmap 0 LineStart
 nmap ^ LineStart
 nmap $ LineEnd
 nmap g Top
@@ -94,6 +95,7 @@ oxmap l SelectRight
 oxmap b SelectBackwardWord
 oxmap w SelectForwardWord
 oxmap e SelectForwardWord
+oxmap 0 SelectLineStart
 oxmap ^ SelectLineStart
 oxmap $ SelectLineEnd
 oxmap g SelectTop
