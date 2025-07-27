@@ -1,3 +1,21 @@
+<style>
+    .doc-heading {
+        font-weight: 600;
+        font-size: 1.2em;
+        margin: 0.8em 0 0.4em 0;
+    }
+    .doc-statement {
+        font-family: monospace;
+        font-weight: 500;
+        font-size: 1.2em;
+        margin: 0.8em 0 0.3em 0;
+    }
+    #commands {
+        column-count: 3;
+        column-gap: 1em;
+    }
+</style>
+
 <div class="doc-heading">Commands</div>
 <div id="commands"></div>
 
