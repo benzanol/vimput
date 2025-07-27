@@ -474,7 +474,7 @@ export class ModeManager {
         let key = event.key;
         if (event.shiftKey) key = "S-" + key;
         if (event.ctrlKey) key = "C-" + key;
-        if (event.altKey) key = "A-" + key;
+        if (event.altKey || event.metaKey) key = "A-" + key;
 
         // Check if currently in the process of pressing a key
         if (this.pressingKey && this.pressingKey === key) {
