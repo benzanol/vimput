@@ -16,7 +16,7 @@ be customized). Since `Escape` is already used by the browser, `Alt+q`
 mode. Once in normal mode, you will be able to use many of vim's
 default keybindings.
 
-# Supported Commands
+## Supported Commands
 
 Currently supported normal mode commands are:
 - Numeric prefixes for repeating any command
@@ -47,6 +47,18 @@ Currently supported visual mode commands are:
 The full list of keybindings and settings can be viewed and customized
 in the options menu once the extension is installed.
 
+## Disabling the debug popup
+
+In order to simulate native keybindings, vimput must use chrome's
+debugger api. This has the delightful feature of providing you with a
+popup at the top of your screen every time the extension is used. In
+order to disable this popup, you must run chrome with the
+`--silent-debugger-extension-api` flag. See
+(this)[https://www.chromium.org/developers/how-tos/run-chromium-with-flags/]
+article on how to run chrome with custom flags.
+
+For brave users: This flag does not seem to work on the standard
+version of brave, but it does work on the beta version.
 
 ## Macos limitations
 
