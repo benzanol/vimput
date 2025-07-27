@@ -3,9 +3,20 @@
 Simulate arrow keys and text editing keys using vim-style bindings.
 
 Since vimput simulates the browser's built-in text editing keys, it
-will natively work on any website without modification. This includes
-websites like Google Docs, which implement their own custom rendering,
-and websites like notion where the text area is not a single element.
+should natively work on all websites which allow arrow key navigation.
+This includes websites like Google Docs, which implement their own
+custom text rendering, websites like notion, where text is split
+across elements, and even websites where you are editing more than
+text, such as google sheets.
+
+By default, the extension starts in "off" mode, and switches to
+"insert" mode whenever a text field is selected (but this behavior can
+be customized). Since `Escape` is already used by the browser, `Alt+q`
+(`Cmd+q` on MacOS) is the default keybinding to enter normal mode.
+Once in normal mode, you will be able to use many of vim's default
+keybindings.
+
+# Supported Commands
 
 Currently supported normal mode commands are:
 - Numeric prefixes for repeating any command
@@ -35,13 +46,6 @@ Currently supported visual mode commands are:
 
 The full list of keybindings and settings can be viewed and customized
 in the options menu once the extension is installed.
-
-By default, the extension starts in "off" mode, and switches to
-"insert" mode whenever a text field is selected (but this behavior can
-be customized). Since `Escape` is already used by the browser, `Alt+q`
-(`Cmd+q` on MacOS) is the default keybinding to enter normal mode.
-Once in normal mode, you will be able to use many of vim's default
-keybindings.
 
 
 ## Macos limitations
@@ -81,6 +85,13 @@ simply delete instead of cut, you could write `nmap d operator
 Backspace` in your config. Since `Backspace` deletes whatever text is
 selected, it will work as an operator.
 
+# Configuration
 
+Almost every aspect of the extension can be configured in the
+configuration file, which can be accessed by clicking on the extension
+icon. You can also provide site-specific configuration, including
+disabling the extension entirely on certain sites.
+
+![The configuration page](resources/promo/OptionsPage.png)
 
 
