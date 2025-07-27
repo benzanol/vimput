@@ -1,8 +1,25 @@
 {
     "manifest_version": 3,
-    "name": "vimput",
-    "version": "1.0",
-    "description": "Simulate vim keybindings in chrome",
+    "name": "Vimput - Modal editing in chrome",
+    "short_name": "vimput",
+    "description": "Map vim-style bindings to the browser's built-in text editing keys.",
+    "author": "Adam Tillou <adam.tillou@gmail.com>",
+    "homepage_url": "https://github.com/benzanol/vimput",
+    "version": "1.0.0",
+
+    "icons": {
+        "16": "resources/icons/vimput16.png",
+        "48": "resources/icons/vimput48.png",
+        "128": "resources/icons/vimput128.png"
+    },
+    "action": {
+        "default_icon": {
+            "16": "resources/icons/vimput16.png",
+            "48": "resources/icons/vimput48.png",
+            "128": "resources/icons/vimput128.png"
+        }
+    },
+
     "permissions": ["storage", "debugger"],
     "background": {
         "service_worker": "dist/background.js"
@@ -13,10 +30,5 @@
             "js": ["dist/content.js"]
         }
     ],
-    "action": {
-        "default_icon": {
-            "128": "/resources/icons/off.png"
-        }
-    },
     "options_page": "./options.html"
 }
