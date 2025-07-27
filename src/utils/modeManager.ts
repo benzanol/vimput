@@ -1,5 +1,5 @@
 import { flattenedCommands, type CommandName } from "./commands";
-import { VinputConfig } from "./parseConfig";
+import { VimputConfig } from "./parseConfig";
 
 // ==================== Utils ====================
 
@@ -169,7 +169,7 @@ export type ExtensionContext = {
 };
 
 export class ModeManager {
-    constructor(private ctx: ExtensionContext, private config: VinputConfig) {
+    constructor(private ctx: ExtensionContext, private config: VimputConfig) {
         this.updateConfig(config);
 
         // Watch the root document
@@ -204,7 +204,7 @@ export class ModeManager {
 
     // ==================== Config ====================
 
-    public updateConfig(config: VinputConfig) {
+    public updateConfig(config: VimputConfig) {
         this.config = config;
 
         // Load site-specific settings
@@ -217,7 +217,7 @@ export class ModeManager {
     }
 
     private verboseLog(...data: any[]) {
-        if (this.config.settings.Verbose) console.log("vinput:", ...data);
+        if (this.config.settings.Verbose) console.log("vimput:", ...data);
     }
 
     private isInputFocused(): boolean {

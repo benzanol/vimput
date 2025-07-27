@@ -1,4 +1,4 @@
-import { defaultVinputConfig } from "./utils/config";
+import { defaultConfig } from "./utils/config";
 import { ModeManager } from "./utils/modeManager";
 
 // Get the stored config
@@ -21,7 +21,7 @@ chrome.storage.sync.get("config", (result) => {
     // Create the state manager
     const manager = new ModeManager(
         { pressKey, setMode, window },
-        result?.config ?? defaultVinputConfig,
+        result?.config ?? defaultConfig,
     );
 
     // Listen for when the stored config changes

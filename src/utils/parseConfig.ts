@@ -66,15 +66,15 @@ type SettingsType = Partial<{ [S in keyof SettingsSchemas]: z.output<SettingsSch
 
 // An action can either be a 'command', which executes normally, or an
 // 'operator', which first waits for a motion, and then executes.
-type VinputAction = { type: "command" | "operator"; commands: CommandName[] };
+type VimputAction = { type: "command" | "operator"; commands: CommandName[] };
 
 // A mapping from keybindings to lists of commands
-type VinputConfigKeymap = Record<string, VinputAction>;
-export type VinputConfig = {
-    insert: VinputConfigKeymap;
-    normal: VinputConfigKeymap;
-    visual: VinputConfigKeymap;
-    motion: VinputConfigKeymap;
+type VimputConfigKeymap = Record<string, VimputAction>;
+export type VimputConfig = {
+    insert: VimputConfigKeymap;
+    normal: VimputConfigKeymap;
+    visual: VimputConfigKeymap;
+    motion: VimputConfigKeymap;
     settings: SettingsType;
     siteSettings: { site: string; setting: string; value: any }[];
 };
@@ -89,10 +89,10 @@ const mapKeywords: Record<string, ("insert" | "normal" | "visual" | "motion")[]>
     "map!": ["normal", "visual", "motion", "insert"],
 };
 
-// Parse the vinput config, and return an error message if parsing failed
-export function parseConfiguration(text: string): VinputConfig | string {
+// Parse the config, and return an error message if parsing failed
+export function parseConfiguration(text: string): VimputConfig | string {
     // Create a deep (enough) copy of the default config
-    const config: VinputConfig = {
+    const config: VimputConfig = {
         insert: {},
         normal: {},
         visual: {},

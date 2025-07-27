@@ -1,10 +1,20 @@
 {
-  "dependencies": {
-    "@types/chrome": "^0.1.1",
-    "zod": "^4.0.10"
-  },
-  "devDependencies": {
-    "ts-loader": "^9.5.2",
-    "webpack-cli": "^6.0.1"
-  }
+    "name": "vimput",
+    "version": "0.0.1",
+    "description": "Simulate vim keybindings in chrome",
+    "author": "Adam Tillou <adam.tillou@gmail.com>",
+    "homepage": "https://www.github.com/benzanol/vimput",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/username/repository.git"
+    },
+    "dependencies": {
+        "@types/chrome": "^0.1.1",
+        "zod": "^4.0.10"
+    },
+    "devDependencies": {
+        "ts-loader": "^9.5.2",
+        "webpack-cli": "^6.0.1"
+    }
 }

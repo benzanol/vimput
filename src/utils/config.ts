@@ -1,6 +1,6 @@
-import { parseConfiguration, VinputConfig } from "./parseConfig";
+import { parseConfiguration, VimputConfig } from "./parseConfig";
 
-export const defaultVinputConfigText: string = `
+export const defaultConfigText: string = `
 # Switch mode on focus
 set DefaultMode normal
 set DefaultInputMode insert
@@ -108,7 +108,7 @@ oxmap W BackwardWord SelectForwardWord
 oxmap A Top SelectBottom
 `.trimStart();
 
-const parsed = parseConfiguration(defaultVinputConfigText);
+const parsed = parseConfiguration(defaultConfigText);
 if (typeof parsed === "string") throw new Error("Invalid default config: " + parsed);
 
-export const defaultVinputConfig: VinputConfig = parsed;
+export const defaultConfig: VimputConfig = parsed;

@@ -1,6 +1,6 @@
 import { commandTypes } from "./utils/commands";
-import { defaultVinputConfigText } from "./utils/config";
-import { parseConfiguration, VinputConfig } from "./utils/parseConfig";
+import { defaultConfigText } from "./utils/config";
+import { parseConfiguration, VimputConfig } from "./utils/parseConfig";
 
 // const maxWidth = getComputedStyle(document.body.parentElement!).maxWidth;
 // document.body.innerText = `Max width is set to ${maxWidth}`;
@@ -93,19 +93,19 @@ configElem.addEventListener("input", updateSaveButton);
 
 // ==================== Load config ====================
 
-const defText = defaultVinputConfigText.trim();
+const defText = defaultConfigText.trim();
 defaultConfigElem.value = defText;
 defaultConfigElem.rows = defText.split("\n").length;
 
 export type ExtensionStorage = {
     configText?: string;
-    config?: VinputConfig;
+    config?: VimputConfig;
 };
 
 // Get data
 chrome.storage.sync.get<ExtensionStorage>("configText", (result) => {
     const textarea = configElem;
-    configText = result?.configText ?? defaultVinputConfigText;
+    configText = result?.configText ?? defaultConfigText;
     textarea.value = configText;
     updateSaveButton();
 });

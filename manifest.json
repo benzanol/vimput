@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "vinput",
+    "name": "vimput",
     "version": "1.0",
-    "description": "Simulate vim keybindings in text inputs",
+    "description": "Simulate vim keybindings in chrome",
     "permissions": ["storage", "debugger", "activeTab"],
     "background": {
         "service_worker": "dist/background.js"
