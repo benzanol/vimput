@@ -106,16 +106,6 @@ export function parseConfiguration(text: string): VinputConfig | string {
         const segs = lines[i].split(/[ \t]+/).filter((s) => s);
         if (segs.length === 0 || segs[0].startsWith("#")) continue;
 
-        if (segs[0] === "unmapAll") {
-            if (segs.length !== 1) return `Line ${i + 1}: unmapAll does not take any arguments`;
-
-            config.insert = {};
-            config.normal = {};
-            config.visual = {};
-            config.motion = {};
-            continue;
-        }
-
         // Check if this is a set statement
         if (segs[0] === "set" || segs[0] === "seton") {
             if (segs[0] === "set") {
