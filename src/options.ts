@@ -69,7 +69,7 @@ saveElem.addEventListener("click", async () => {
         }
 
         // Save config
-        await chrome.storage.local.set<ExtensionStorage>({
+        await chrome.storage.sync.set<ExtensionStorage>({
             configText: configElem.value,
             config: typeof output === "string" ? undefined : output,
         });
@@ -103,7 +103,7 @@ export type ExtensionStorage = {
 };
 
 // Get data
-chrome.storage.local.get<ExtensionStorage>("configText", (result) => {
+chrome.storage.sync.get<ExtensionStorage>("configText", (result) => {
     const textarea = configElem;
     configText = result?.configText ?? "";
     textarea.value = configText;

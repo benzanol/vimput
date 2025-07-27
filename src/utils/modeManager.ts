@@ -269,6 +269,16 @@ export class ModeManager {
     // Don't show the mode icon until the config is loaded
     private state: State = { mode: "off" };
 
+    // Toggle on click
+    public toggleMode(): void {
+        if (this.state.mode === "off") {
+            const mode = this.defaultMode();
+            this.changeState({ mode: mode === "off" ? "normal" : mode }, "click");
+        } else {
+            this.changeState({ mode: "off" }, "click");
+        }
+    }
+
     // Elements which the plugin has set the caret color on
     private caretColorElems: HTMLElement[] = [];
 
@@ -393,6 +403,7 @@ export class ModeManager {
             } else if (
                 this.state.mode !== "insert" &&
                 this.config.settings[`${capitalize(this.state.mode)}BlockInsertions`] &&
+                this.isInputFocused() &&
                 key.match(/^(S-)?.$/)
             ) {
                 cancel();

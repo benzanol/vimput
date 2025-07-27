@@ -1,12 +1,11 @@
 {
-    "manifest_version": 2,
+    "manifest_version": 3,
     "name": "vinput",
     "version": "1.0",
     "description": "Simulate vim keybindings in text inputs",
-    "permissions": ["debugger", "activeTab", "storage"],
+    "permissions": ["storage", "debugger", "activeTab"],
     "background": {
-        "scripts": ["dist/background.js"],
-        "persistent": false
+        "service_worker": "dist/background.js"
     },
     "content_scripts": [
         {
@@ -14,7 +13,7 @@
             "js": ["dist/content.js"]
         }
     ],
-    "browser_action": {
+    "action": {
         "default_icon": {
             "128": "/resources/icons/off.png"
         }

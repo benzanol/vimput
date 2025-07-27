@@ -120,9 +120,17 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
         performKeyPress(tabId, message.key as KeyCombo).finally(() => respond());
         return true;
     } else if (message.type === "changeMode") {
-        chrome.browserAction.setIcon({
+        chrome.action.setIcon({
             tabId,
             path: { "128": `/resources/icons/${message.mode}.png` },
         });
     }
+});
+
+// ==================== On Click ====================
+
+chrome.action.onClicked.addListener(async (_tab) => {
+    // if (!tab.id) return;
+    // chrome.tabs.sendMessage(tab.id, { type: "clicked" });
+    chrome.runtime.openOptionsPage();
 });
