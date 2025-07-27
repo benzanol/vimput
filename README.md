@@ -8,12 +8,12 @@ Unlike existing extensions which enable vim keys for page navigation,
 By default, the extension starts in "off" mode, and switches to
 "insert" mode whenever a text field is selected (but this behavior can
 be customized). Since "Escape" is already used by the browser, "Alt+q"
-is the default keybinding to enter normal mode.
+is the default keybinding to enter normal mode. Once in normal mode,
+you will be able to use many of vim's default keybindings.
 
-Once in normal mode, you will be able to use many of vim's default
-keybindings. The full list of keybindings, as well as settings
-controlling the extension's behavior, can be viewed and customized by
-clicking on the extension icon.
+The full list of keybindings, as well as settings controlling the
+extension's behavior, can be viewed and customized by clicking on the
+extension icon.
 
 
 ## Implementation
