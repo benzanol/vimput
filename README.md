@@ -12,9 +12,9 @@ text, such as google sheets.
 By default, the extension starts in "off" mode, and switches to
 "insert" mode whenever a text field is selected (but this behavior can
 be customized). Since `Escape` is already used by the browser, `Alt+q`
-(`Cmd+q` on MacOS) is the default keybinding to enter normal mode.
-Once in normal mode, you will be able to use many of vim's default
-keybindings.
+(or `Control+q` for MacOS) is the default keybinding to enter normal
+mode. Once in normal mode, you will be able to use many of vim's
+default keybindings.
 
 # Supported Commands
 

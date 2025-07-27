@@ -28,8 +28,8 @@ set VisualDarkCaretColor #f0f
 
 # Entering normal mode
 imap A-q Normal
+imap C-q Normal
 xmap q ExitSelection Normal
-xmap A-q ExitSelection Normal
 
 # Entering insert mode
 nmap i Insert
