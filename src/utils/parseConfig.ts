@@ -66,7 +66,7 @@ type SettingsType = Partial<{ [S in keyof SettingsSchemas]: z.output<SettingsSch
 
 // An action can either be a 'command', which executes normally, or an
 // 'operator', which first waits for a motion, and then executes.
-type VimputAction = { type: "command" | "operator"; commands: CommandName[] };
+export type VimputAction = { type: "command" | "operator"; commands: CommandName[] };
 
 // A mapping from keybindings to lists of commands
 type VimputConfigKeymap = Record<string, VimputAction>;

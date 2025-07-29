@@ -1,5 +1,5 @@
 import { flattenedCommands, platformKeys, type CommandName } from "./commands";
-import { VimputConfig } from "./parseConfig";
+import { VimputAction, VimputConfig } from "./parseConfig";
 
 // ==================== Utils ====================
 
@@ -147,6 +147,58 @@ function loadSelection(sel: Selection): void {
     }
 }
 
+// ==================== Fast Keymap ====================
+
+// Encapsulates more than just a VimputAction: anything that a key can do.
+export type BroadAction =
+    | VimputAction
+    | { type: "zero"; initial: VimputAction | undefined }
+    | { type: "number"; number: number };
+
+// Define a faster way to check for keybindings. The array is 16
+// elements long, with each element being the mapping associated with
+// a particular control combo, where S=1, C=2, A/M=4. For example,
+// index 9=8+1 would be Alt+Shift.
+type FastKeymap = { [s: string]: BroadAction }[] & { length: 8 };
+
+function createFastKeymap(
+    map: { [s: string]: VimputAction },
+    numerics: boolean = false,
+): FastKeymap {
+    const fastMap: FastKeymap = Array.from({ length: 8 }, () => ({})) as FastKeymap;
+    const modifiers = { S: 1, C: 2, A: 4, M: 4 };
+
+    for (const combo in map) {
+        let modifier = 0;
+        let rest = combo;
+        let match: RegExpMatchArray | null;
+
+        while ((match = rest.match(/^([ACMS])-(.*)$/))) {
+            rest = match[2];
+            modifier |= modifiers[match[1] as "A" | "C" | "M" | "S"];
+        }
+
+        fastMap[modifier][rest] = map[combo];
+    }
+
+    if (numerics) {
+        fastMap[0]["0"] = { type: "zero", initial: map["0"] };
+        for (let i = 1; i <= 9; i++) {
+            fastMap[0][`${i}`] = { type: "number", number: i };
+        }
+    }
+
+    return fastMap;
+}
+
+function accessFastKeymap(event: KeyboardEvent, map: FastKeymap): BroadAction | undefined {
+    let modifier = 0;
+    if (event.shiftKey) modifier |= 1;
+    if (event.ctrlKey) modifier |= 2;
+    if (event.altKey || event.metaKey) modifier |= 4;
+    return map[modifier][event.key];
+}
+
 // ==================== State Manager ====================
 
 // For the motion mode, we need to know which operator to run once the
@@ -170,7 +222,10 @@ export type ExtensionContext = {
 };
 
 export class ModeManager {
-    constructor(private ctx: ExtensionContext, private config: VimputConfig) {
+    constructor(
+        private ctx: ExtensionContext,
+        config: VimputConfig,
+    ) {
         this.updateConfig(config);
 
         // Watch the root document
@@ -205,22 +260,31 @@ export class ModeManager {
 
     // ==================== Config ====================
 
+    // These will be initialize by updateConfig, which runs in the constructor
+    private maps: Record<"insert" | "normal" | "visual" | "motion", FastKeymap> = undefined as any;
+    private settings: VimputConfig["settings"] = undefined as any;
+
     public updateConfig(config: VimputConfig) {
-        this.config = config;
+        this.maps = {
+            insert: createFastKeymap(config.insert),
+            normal: createFastKeymap(config.normal, true),
+            visual: createFastKeymap(config.visual, true),
+            motion: createFastKeymap(config.motion, true),
+        };
 
         // Load site-specific settings
-        config.settings = { ...config.settings };
+        this.settings = { ...config.settings };
         for (const { site, setting, value } of config.siteSettings) {
             // Remove the extension prefix (https://)
             const href = this.ctx.window.location.href.replace(/^[^\/]+:\/\//, "");
             if (href.match(new RegExp(`^${site}$`))) {
-                (config.settings as any)[setting] = value;
+                (this.settings as any)[setting] = value;
             }
         }
     }
 
     private verboseLog(...data: any[]) {
-        if (this.config.settings.Verbose) console.log("vimput:", ...data);
+        if (this.settings.Verbose) console.log("vimput:", ...data);
     }
 
     private isInputFocused(): boolean {
@@ -236,8 +300,8 @@ export class ModeManager {
 
     private defaultMode(): "off" | "insert" | "normal" | "visual" {
         return (
-            (this.isInputFocused() && this.config.settings.DefaultInputMode) ||
-            this.config.settings.DefaultMode ||
+            (this.isInputFocused() && this.settings.DefaultInputMode) ||
+            this.settings.DefaultMode ||
             "insert"
         );
     }
@@ -306,9 +370,9 @@ export class ModeManager {
         const mode = this.state.mode;
         if (mode !== "off") {
             // Let the new color be either light or dark background
-            let newColor = this.config.settings[`${capitalize(mode)}CaretColor`];
+            let newColor = this.settings[`${capitalize(mode)}CaretColor`];
             if (isBgDark(this.ctx.window)) {
-                newColor = this.config.settings[`${capitalize(mode)}DarkCaretColor`] ?? newColor;
+                newColor = this.settings[`${capitalize(mode)}DarkCaretColor`] ?? newColor;
             }
 
             if (newColor) {
@@ -374,134 +438,125 @@ export class ModeManager {
         }
     }
 
-    // ==================== Key Press Logic ====================
-
-    public async handleKey(key: string, cancel: () => void) {
-        if (this.state.mode === "off") return;
-
-        let repeat = this.state.repeat ?? 1;
-        const maxRepeat = this.config.settings.MaxRepeat ?? Infinity;
-        if (isFinite(maxRepeat) && maxRepeat >= 1 && repeat > maxRepeat) repeat = maxRepeat;
-
-        // Check if it is a numeric argument
-        if (
-            this.state.mode !== "insert" &&
-            key.match(/^[0123456789]$/) &&
-            !(this.state.repeat === undefined && key === "0")
-        ) {
-            this.verboseLog(`Numeric key '${key}'`);
-
-            const newRepeat = +((this.state.repeat ?? "") + key);
-            this.changeState({ ...this.state, repeat: newRepeat }, "repeat");
-            cancel();
-            return;
-        } else {
-            // If not actively updating the repeat number, reset it
-            this.changeState({ ...this.state, repeat: undefined }, "norepeat");
-        }
-
-        const modeBindings = this.config[this.state.mode];
-        const keyBinding = modeBindings[key];
-        if (!keyBinding) {
-            this.verboseLog(`Unbound key '${key}'`);
-
-            // Exit motion mode if an invalid motion key was pressed
-            if (this.state.mode === "motion") {
-                cancel();
-                this.changeState({ mode: this.state.previous }, "nomotion");
-            } else if (
-                this.state.mode !== "insert" &&
-                this.config.settings[`${capitalize(this.state.mode)}BlockInsertions`] &&
-                this.isInputFocused() &&
-                key.match(/^(S-)?.$/)
-            ) {
-                cancel();
-            }
-            // Check for selection change after the key event has been performed
-            setTimeout(() => this.onSelectionChange(), 0);
-            return;
-        }
-        this.verboseLog(`Bound key '${key}' '${keyBinding.commands}'`);
-
-        // Prevent whatever the key would have originally done
-        cancel();
-
-        // If its an operator, switch to motion mode
-        if (keyBinding.type === "operator") {
-            if (this.state.mode === "motion") {
-                console.error("Cannot perform an operator as a motion");
-                return;
-            }
-            this.changeState(
-                {
-                    mode: "motion",
-                    operator: keyBinding.commands,
-                    previous: this.state.mode,
-                },
-                "operator",
-            );
-            return;
-        }
-
-        // Perform the actual command
-        for (let i = 0; i < repeat; i++) {
-            await this.performCommands(keyBinding.commands);
-        }
-
-        // If the last mode was motion, then perform the operator
-        if (this.state.mode === "motion") {
-            // Add a tiny bit of delay to make the behavior more consistent
-            await new Promise((resolve) => setTimeout(resolve, 20));
-            await this.performCommands(this.state.operator);
-
-            // If still in motion mode, restore the old mode
-            if (this.state.mode === "motion") {
-                this.changeState({ mode: this.state.previous }, "motion");
-            }
-        }
-    }
-
     // ==================== Handle Events ====================
 
     private handlingKeydown = false;
     private lastEventType: "bound" | "unbound" | "other" = "other";
 
-    public onKeydown = async (event: KeyboardEvent) => {
+    private onKeydown = async (event: KeyboardEvent) => {
         if (this.state.mode === "off") return;
 
-        if (["Control", "Shift", "Alt", "Meta", "CapsLock"].includes(event.key)) return;
-
-        let key = event.key;
-        if (event.shiftKey) key = "S-" + key;
-        if (event.ctrlKey) key = "C-" + key;
-        if (event.altKey || event.metaKey) key = "A-" + key;
-
         // Check if currently in the process of pressing a key
-        if (this.pressingKey && this.pressingKey === key) {
-            this.verboseLog(`Extension key '${key}'`);
-            return;
-        } else if (this.handlingKeydown) {
-            this.verboseLog(`Blocked overlapping key '${key}'`);
-            preventEvent(event);
+        if (this.pressingKey) {
+            let key = event.key;
+            if (event.shiftKey) key = "S-" + key;
+            if (event.ctrlKey) key = "C-" + key;
+            if (event.altKey || event.metaKey) key = "A-" + key;
+
+            if (this.pressingKey === key) {
+                this.verboseLog(`Extension key '${key}'`);
+                return;
+            } else {
+                this.verboseLog(`Blocked overlapping key '${key}'`);
+                preventEvent(event);
+                return;
+            }
+        }
+
+        // Check if the key is unbound
+        let action = accessFastKeymap(event, this.maps[this.state.mode]);
+        if (!action) {
+            this.verboseLog(`Unbound key '${event.key}'`);
+            this.lastEventType = "unbound";
+
+            if (this.state.mode === "insert") {
+            } else if (this.state.mode === "motion") {
+                this.changeState({ mode: this.state.previous }, "nomotion");
+            } else if (
+                // Check if insertions are blocked for normal/visual mode
+                this.settings[`${capitalize(this.state.mode)}BlockInsertions`] &&
+                !event.ctrlKey &&
+                !event.altKey &&
+                !event.metaKey
+            ) {
+                preventEvent(event);
+            }
             return;
         }
 
         try {
             this.handlingKeydown = true;
+            this.lastEventType = "bound";
+            preventEvent(event);
 
-            // Start off by assuming the key is unbound, and if the
-            // handler cancels the event, that means the key was bound.
-            this.lastEventType = "unbound";
-            const cancel = () => {
-                preventEvent(event);
-                this.lastEventType = "bound";
-            };
+            let repeat = this.state.repeat ?? 1;
+            const maxRepeat = this.settings.MaxRepeat ?? Infinity;
+            if (isFinite(maxRepeat) && maxRepeat >= 1 && repeat > maxRepeat) repeat = maxRepeat;
 
-            await this.handleKey(key, cancel);
+            // Handle if it is a zero
+            if (action.type === "zero") {
+                if (action.initial && !this.state.repeat) {
+                    action = action.initial;
+                } else {
+                    action = { type: "number", number: 0 };
+                }
+            }
+
+            // Check if it is a numeric argument
+            if (action.type === "number") {
+                this.verboseLog(`Numeric key '${action.number}'`);
+
+                const newRepeat = +`${this.state.repeat ?? ""}${action.number}`;
+                this.changeState({ ...this.state, repeat: newRepeat }, "repeat");
+                return;
+            } else {
+                // If not actively updating the repeat number, reset it
+                this.changeState({ ...this.state, repeat: undefined }, "norepeat");
+            }
+
+            // Perform the key action
+            this.verboseLog(`Bound key '${event.key}' '${action.commands}'`);
+
+            // Check for selection change after the key event has been performed
+            setTimeout(() => this.onSelectionChange(), 0);
+
+            // If its an operator, switch to motion mode
+            if (action.type === "operator") {
+                if (this.state.mode === "motion") {
+                    console.error("Cannot perform an operator as a motion");
+                    return;
+                }
+                this.changeState(
+                    {
+                        mode: "motion",
+                        operator: action.commands,
+                        previous: this.state.mode,
+                    },
+                    "operator",
+                );
+                return;
+            }
+
+            // Perform the actual command
+            for (let i = 0; i < repeat; i++) {
+                await this.performCommands(action.commands);
+            }
+
+            // If the last mode was motion, then perform the operator
+            if (this.state.mode === "motion") {
+                // Add a tiny bit of delay to make the behavior more consistent
+                await new Promise((resolve) => setTimeout(resolve, 20));
+                await this.performCommands(this.state.operator);
+
+                // If still in motion mode, restore the old mode
+                if (this.state.mode === "motion") {
+                    this.changeState({ mode: this.state.previous }, "motion");
+                }
+            }
         } finally {
-            // By waiting before setting to false the keydown, the
-            // selection change listener runs before it is set to false,
-            // meaning that if a command makes the visual selection have
+            // By waiting before setting to false, the selection
+            // change listener runs before it is set to false, meaning
+            // that if a command makes the visual selection have
             // length 0, visual mode will not be immediately disabled
             setTimeout(() => {
                 this.handlingKeydown = false;
@@ -522,7 +577,7 @@ export class ModeManager {
         // Don't change mode when a keybinding moves to a new input element
         if (inInput && this.lastEventType === "bound") return;
 
-        if ((this.config.settings.AutoSwitchMode ?? "never") !== "never") {
+        if ((this.settings.AutoSwitchMode ?? "never") !== "never") {
             this.changeState({ mode: this.defaultMode() }, "focus", true);
         }
 
@@ -551,7 +606,7 @@ export class ModeManager {
             selecting &&
             this.state.mode !== "visual" &&
             this.state.mode !== "off" &&
-            this.config.settings.VisualModeOnSelect
+            this.settings.VisualModeOnSelect
         ) {
             this.changeState({ mode: "visual" }, "selection");
         } else if (!selecting && this.state.mode === "visual") {
@@ -562,7 +617,7 @@ export class ModeManager {
     public onPointerEvent = () => {
         this.verboseLog("Pointer");
         this.lastEventType = "other";
-        if (this.config.settings.AutoSwitchMode === "always") this.onFocusChange();
+        if (this.settings.AutoSwitchMode === "always") this.onFocusChange();
         this.onSelectionChange();
     };
 }
