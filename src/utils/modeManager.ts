@@ -347,7 +347,7 @@ export class ModeManager {
     }
 
     // Elements which the plugin has set the caret color on
-    private caretColorElems: HTMLElement[] = [];
+    private caretColorElems: HTMLStyleElement[] = [];
 
     private changeState(newState: State, reason: string, force: boolean = false) {
         if (!["off", "insert", "normal", "visual", "motion"].includes(newState.mode)) {
@@ -362,7 +362,7 @@ export class ModeManager {
 
         // Remove the old caret color
         for (const elem of this.caretColorElems) {
-            elem.style.caretColor = "unset";
+            elem.parentElement?.removeChild(elem);
         }
         this.caretColorElems = [];
 
@@ -377,8 +377,9 @@ export class ModeManager {
 
             if (newColor) {
                 this.caretColorElems = allDocuments(this.ctx.window.document).map((doc) => {
-                    doc.body.style.caretColor = newColor;
-                    return doc.body;
+                    const styleElem = doc.head.appendChild(document.createElement("style"));
+                    styleElem.innerText = `*{caret-color:${newColor};}`;
+                    return styleElem;
                 });
             }
         }
@@ -480,7 +481,9 @@ export class ModeManager {
                 !event.metaKey
             ) {
                 preventEvent(event);
+                return;
             }
+            setTimeout(this.onSelectionChange, 0);
             return;
         }
 
@@ -516,9 +519,6 @@ export class ModeManager {
 
             // Perform the key action
             this.verboseLog(`Bound key '${event.key}' '${action.commands}'`);
-
-            // Check for selection change after the key event has been performed
-            setTimeout(() => this.onSelectionChange(), 0);
 
             // If its an operator, switch to motion mode
             if (action.type === "operator") {
@@ -558,10 +558,7 @@ export class ModeManager {
             // change listener runs before it is set to false, meaning
             // that if a command makes the visual selection have
             // length 0, visual mode will not be immediately disabled
-            setTimeout(() => {
-                this.handlingKeydown = false;
-                this.onSelectionChange();
-            }, 10);
+            setTimeout(() => this.handlingKeydown = false, 10);
         }
     };
 
